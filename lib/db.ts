@@ -16,7 +16,8 @@ function makeAdapter() {
         "Generate direct TCP credentials in Prisma Console (postgres://...@db.prisma.io:5432/...?sslmode=require)."
     );
   }
-  // Pool tuning, all driven by the local `prisma dev` server's quirks:
+  // The local `prisma dev` server needs babysitting that a real Postgres
+  // does not:
   //  - it resets connections beyond ~7 concurrent, so stay under that;
   //  - an aborted query (Next.js cancels in-flight RSC renders on
   //    navigation/refresh) can leave a socket protocol-desynced, after
@@ -24,13 +25,17 @@ function makeAdapter() {
   //    parameters, but prepared statement requires 0". Retiring sockets
   //    quickly (few uses, short idle life) keeps a poisoned one from
   //    serving request after request.
+  // In production those retirement rules are just churn: each serverless
+  // instance keeps its own pool, so the pool stays small and long-lived
+  // and the platform pooler does the multiplexing.
+  const isLocal = /localhost|127\.0\.0\.1/.test(url);
   return new PrismaPg({
     connectionString: url,
-    max: Number(process.env.DATABASE_POOL_MAX ?? 5),
+    max: Number(process.env.DATABASE_POOL_MAX ?? (isLocal ? 5 : 3)),
     keepAlive: true,
-    maxUses: 50,
-    idleTimeoutMillis: 10_000,
-    maxLifetimeSeconds: 120,
+    ...(isLocal
+      ? { maxUses: 50, idleTimeoutMillis: 10_000, maxLifetimeSeconds: 120 }
+      : {}),
   });
 }
 
