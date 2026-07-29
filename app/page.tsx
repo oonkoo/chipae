@@ -34,6 +34,12 @@ const STEPS = [
   },
 ];
 
+// The hero counts are live numbers, so this page is rendered per request.
+// Without this Next tries to prerender it at build time, which drags the
+// database into the build — the build then fails wherever the build
+// machine can't reach it (and would otherwise ship frozen counts).
+export const dynamic = "force-dynamic";
+
 export default async function LandingPage() {
   const kindeUser = await getOptionalKindeUser();
   if (kindeUser) {
