@@ -1,0 +1,207 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Identity ────────────────────────────────────────────────────────────────
+
+model User {
+  id          String   @id @default(cuid())
+  kindeId     String   @unique
+  email       String   @unique
+  // Null until onboarding completes — a set username marks a complete profile.
+  username    String?  @unique
+  displayName String?
+  avatarId    String   @default("chip-gold")
+  xp          Int      @default(0)
+  level       Int      @default(1)
+  lastSeenAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sentFriendRequests     Friendship[]   @relation("FriendshipRequester")
+  receivedFriendRequests Friendship[]   @relation("FriendshipAddressee")
+  hostedLobbies          Lobby[]        @relation("LobbyHost")
+  lobbyMemberships       LobbyMember[]
+  notifications          Notification[]
+  lobbyMessages          LobbyMessage[]
+  gameWins               GameWin[]
+}
+
+// ─── Friends ─────────────────────────────────────────────────────────────────
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
+// One row per relationship. The unique constraint below cannot stop a reverse
+// duplicate (A→B and B→A) — friend actions MUST check both directions before
+// insert (enforced in lib/friends.ts, covered by unit tests).
+model Friendship {
+  id          String           @id @default(cuid())
+  requesterId String
+  addresseeId String
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  requester User @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId, status])
+  @@index([requesterId, status])
+}
+
+// ─── Lobbies ─────────────────────────────────────────────────────────────────
+
+enum LobbyVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum LobbyStatus {
+  OPEN
+  IN_GAME
+  CLOSED
+}
+
+model Lobby {
+  id         String          @id @default(cuid())
+  // Short human-readable join code, e.g. "K4Q7NX".
+  code       String          @unique
+  name       String
+  hostId     String
+  visibility LobbyVisibility @default(PRIVATE)
+  status     LobbyStatus     @default(OPEN)
+  maxPlayers Int             @default(4)
+  // Placeholder until games exist; becomes an enum/relation later.
+  gameType   String?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  host     User           @relation("LobbyHost", fields: [hostId], references: [id])
+  members  LobbyMember[]
+  sessions GameSession[]
+  messages LobbyMessage[]
+
+  @@index([visibility, status])
+}
+
+// Lobby chat, shared across every chat surface (room column, shell rail).
+// Rows are deleted when the lobby closes — chat stays lobby-scoped, not an
+// archive. Realtime events are delivery hints; this table is the authority
+// (ADR-0001).
+model LobbyMessage {
+  id        String   @id @default(cuid())
+  lobbyId   String
+  userId    String
+  // Null = lobby chat (lives until the lobby closes). Set = chat for one
+  // game session — wiped the moment that game ends.
+  sessionId String?
+  text      String
+  createdAt DateTime @default(now())
+
+  lobby Lobby @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([lobbyId, createdAt])
+  @@index([sessionId])
+}
+
+// The only game record that outlives a session: who won what, when.
+// Populates profile history (design: only winning records persist).
+model GameWin {
+  id        String   @id @default(cuid())
+  userId    String
+  gameType  String
+  sessionId String
+  // Where it happened, so a lobby can show its own history.
+  lobbyId   String?
+  // Frozen lineup for that session: [{ name, avatarId, isBot, userId,
+  // detail }]. Snapshotted because seats (and whole lobbies) are deleted
+  // later — the record must stand on its own.
+  players   Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([lobbyId, createdAt])
+}
+
+enum LobbyRole {
+  HOST
+  PLAYER
+}
+
+enum BotDifficulty {
+  EASY
+  NORMAL
+  HARD
+}
+
+// A seat at the table. Human seats have userId; CPU seats have isBot + botName.
+model LobbyMember {
+  id            String         @id @default(cuid())
+  lobbyId       String
+  userId        String?
+  isBot         Boolean        @default(false)
+  botName       String?
+  botDifficulty BotDifficulty?
+  // Seat order drives player colors (chart-1..5, see design/art-direction.md).
+  seat          Int
+  role          LobbyRole      @default(PLAYER)
+  ready         Boolean        @default(false)
+  joinedAt      DateTime       @default(now())
+
+  lobby Lobby @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([lobbyId, userId])
+  @@unique([lobbyId, seat])
+  @@index([userId])
+}
+
+// ─── Notifications ───────────────────────────────────────────────────────────
+
+enum NotificationType {
+  FRIEND_REQUEST
+  FRIEND_ACCEPTED
+  LOBBY_INVITE
+  SYSTEM
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  payload   Json
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+}
+
+// ─── Games (placeholder — infra only, no games yet) ──────────────────────────
+
+model GameSession {
+  id        String    @id @default(cuid())
+  lobbyId   String
+  gameType  String
+  state     Json?
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  lobby Lobby @relation(fields: [lobbyId], references: [id], onDelete: Cascade)
+
+  @@index([lobbyId])
+}

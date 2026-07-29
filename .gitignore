@@ -39,3 +39,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Claude Code Game Studios
+.claude/settings.local.json
+production/session-logs/
+
+/lib/generated/prisma
+
+# prisma generated client
+/lib/generated/
+
+# playwright artifacts
+.playwright-mcp/
