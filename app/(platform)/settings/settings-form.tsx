@@ -105,7 +105,7 @@ export function SettingsForm({
       </div>
 
       <div className="flex items-center gap-3">
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" size="lg" disabled={submitting}>
           {submitting ? "Saving…" : "Save changes"}
         </Button>
         {formState.ok && (

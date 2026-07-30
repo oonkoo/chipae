@@ -54,6 +54,28 @@ Depth comes from layered indigo surfaces (`bg-background` → `bg-card` →
 `font-heading` is Lilita One — headlines and section titles only, never body
 text. Join codes and stats are `font-mono`, letter-spaced and uppercase.
 
+## Buttons have thickness — pick the right one
+
+`Button` has two dimensional variants plus the flat ones:
+
+- **`default`** — the gold chip pill. Hover lifts it, press sinks it into the
+  table. This is the brand's primary action.
+- **`game`** — candy 3D in the logo's purple. Use it for the primary action
+  *on the felt*, where gold is reserved for status (ready, won, NUNO).
+- `outline`, `secondary`, `ghost`, `destructive`, `link` are flat.
+
+Sizes: `default`, `xs`, `sm`, `lg`, `xl`, and the square `icon`, `icon-xs`,
+`icon-sm`, `icon-lg`.
+
+Still one primary per view. Gold and purple are both loud — do not put a
+`default` and a `game` button side by side competing for the same decision.
+
+The dimensionality comes from token families you can reach with `var()` if you
+build a custom surface: `--primary-hi/-lo/-edge`, `--game`, `--game-hi/-lo/
+-edge/-ink`, `--gloss`, `--gloss-strong`, `--gloss-weak`, `--btn-ink-shadow`.
+Note there is **no `bg-game` utility class** in the shipped stylesheet — reach
+those values through `var(--game)`, or just use `<Button variant="game">`.
+
 ## Nuno game cards have their own palette
 
 `NunoCardFace`, `NunoCardBack` and `NunoCardFan` are the deck for Nuno. Their
@@ -75,8 +97,11 @@ restyle cards with app tokens.
 
 - Voice is game-night host, not esports announcer: "Take a seat", "Deal you
   in?", "Your table is ready". Empty states invite action.
-- The chip motif (`ChipMark`, `AvatarChip`) appears only where a *player* or a
-  *seat* is represented — nowhere else.
+- The chip motif (`AvatarChip`) appears only where a *player* or a *seat* is
+  represented — nowhere else.
+- The Chipae logo is a glossy badge that already contains the wordmark. It is
+  not part of this bundle (it renders through a Next-only image component), so
+  never draw it, and never place the word "Chipae" next to it.
 - No icon components are exported. `AvatarChip` renders its own glyph; for
   other icons use text or inline SVG.
 - Compound parts must be composed inside their parent: `CardHeader`/

@@ -25,6 +25,18 @@
       "viewport": "460x420"
     }
   },
+  "dtsPropsFor": {
+    "Button": "variant?: 'default' | 'game' | 'outline' | 'secondary' | 'ghost' | 'destructive' | 'link'; size?: 'default' | 'xs' | 'sm' | 'lg' | 'xl' | 'icon' | 'icon-xs' | 'icon-sm' | 'icon-lg'; disabled?: boolean; type?: 'button' | 'submit' | 'reset'; nativeButton?: boolean; render?: React.ReactElement; onClick?: React.MouseEventHandler<HTMLButtonElement>; className?: string; children?: React.ReactNode;",
+    "Card": "size?: 'default' | 'sm'; className?: string; children?: React.ReactNode;",
+    "Input": "type?: string; placeholder?: string; value?: string | number; defaultValue?: string | number; disabled?: boolean; required?: boolean; id?: string; name?: string; onChange?: React.ChangeEventHandler<HTMLInputElement>; className?: string;",
+    "Label": "htmlFor?: string; className?: string; children?: React.ReactNode;",
+    "Dialog": "open?: boolean; defaultOpen?: boolean; onOpenChange?: (open: boolean) => void; modal?: boolean; children?: React.ReactNode;",
+    "Popover": "open?: boolean; defaultOpen?: boolean; onOpenChange?: (open: boolean) => void; children?: React.ReactNode;",
+    "AvatarChip": "avatarId: string; ring?: boolean; className?: string;",
+    "NunoCardFace": "card: { id: string; color: 'red' | 'blue' | 'green' | 'yellow' | 'wild'; type: 'number' | 'skip' | 'reverse' | 'draw2' | 'wild' | 'wild4'; value?: number }; size?: 'xs' | 'sm' | 'md' | 'lg'; dimmed?: boolean; className?: string;",
+    "NunoCardBack": "size?: 'xs' | 'sm' | 'md' | 'lg'; className?: string;",
+    "NunoCardFan": "count: number; size?: 'xs' | 'sm' | 'md' | 'lg'; max?: number; vertical?: boolean;"
+  },
   "componentSrcMap": {
     "Button": "components/ui/button.tsx",
     "Card": "components/ui/card.tsx",
@@ -33,7 +45,6 @@
     "Dialog": "components/ui/dialog.tsx",
     "Popover": "components/ui/popover.tsx",
     "AvatarChip": "components/avatar-chip.tsx",
-    "ChipMark": "components/chip-mark.tsx",
     "NunoCardFace": "components/game/nuno-card.tsx",
     "NunoCardBack": "components/game/nuno-card.tsx",
     "NunoCardFan": "components/game/nuno-card.tsx"

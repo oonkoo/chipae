@@ -463,6 +463,12 @@ export function NunoBoard({
     !view.youDrew &&
     view.yourPlayableCardIds.length === 0;
 
+  // You are one card from out and haven't called it. Any other player's
+  // action closes this window and costs you two cards, so the call button
+  // takes over the status slot until it's resolved.
+  const owesNuno =
+    !view.winnerId && view.pendingUnoMemberId === view.yourMemberId;
+
   // Purely derived: the moment the deck count moves, the draw has landed
   // and the placeholder retires itself — no timers, no stale state.
   const showDrawPlaceholder =
@@ -596,18 +602,43 @@ export function NunoBoard({
           </div>
         </div>
 
-        {/* Status ribbon, between the piles and your hand */}
-        <div className="absolute top-[62%] left-1/2 -translate-x-1/2">
-          <span
-            className={cn(
-              "rounded-full border px-3 py-1 text-xs whitespace-nowrap backdrop-blur-sm transition-colors",
-              yourTurn && !view.winnerId
-                ? "border-primary/60 bg-primary/15 font-medium text-foreground"
-                : "border-white/10 bg-background/60 text-muted-foreground"
-            )}
-          >
-            {status}
-          </span>
+        {/* Between the piles and your hand: normally the status ribbon, but
+            while you owe a "Nuno!" the same slot becomes the call button.
+            It lives on the felt (not under it) so a mid-hand appearance
+            can't reflow the table, and it sits on the line your eye is
+            already following between the pile and your cards — missing it
+            costs two cards. */}
+        <div
+          className={cn(
+            "absolute left-1/2 z-30 -translate-x-1/2",
+            // The call button is much taller than the ribbon, so anchor it
+            // to the hand instead of a percentage — it then clears the
+            // cards on a short felt and never lands on the piles.
+            owesNuno ? "bottom-[11rem]" : "top-[62%]"
+          )}
+        >
+          {owesNuno ? (
+            <Button
+              variant="game"
+              size="xl"
+              disabled={pending}
+              aria-label="Call Nuno before anyone else plays"
+              onClick={() => run(() => callNuno(lobbyId))}
+            >
+              NUNO!
+            </Button>
+          ) : (
+            <span
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs whitespace-nowrap backdrop-blur-sm transition-colors",
+                yourTurn && !view.winnerId
+                  ? "border-primary/60 bg-primary/15 font-medium text-foreground"
+                  : "border-white/10 bg-background/60 text-muted-foreground"
+              )}
+            >
+              {status}
+            </span>
+          )}
         </div>
 
         {/* What the last action card actually did */}
@@ -784,16 +815,6 @@ export function NunoBoard({
                 onClick={() => run(() => passTurn(lobbyId))}
               >
                 Keep it &amp; pass
-              </Button>
-            )}
-            {view.pendingUnoMemberId === view.yourMemberId && (
-              <Button
-                size="sm"
-                disabled={pending}
-                className="animate-pulse font-heading text-base"
-                onClick={() => run(() => callNuno(lobbyId))}
-              >
-                NUNO!
               </Button>
             )}
             {error && <span className="text-xs text-destructive">{error}</span>}

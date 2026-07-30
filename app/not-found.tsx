@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { ChipMark } from "@/components/chip-mark";
+import { ChipaeLogo } from "@/components/chipae-logo";
 import { Button } from "@/components/ui/button";
 
 export default function NotFound() {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-24 text-center">
-      <ChipMark className="size-12 opacity-60" />
+      <ChipaeLogo size={88} priority className="opacity-70" />
       <h1 className="font-heading text-2xl text-foreground">
         Nothing at this table
       </h1>

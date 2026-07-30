@@ -344,7 +344,7 @@ export function LobbyQuickPanel({
             placeholder="Lobby name (optional)"
             aria-label="Lobby name"
           />
-          <Button type="submit" size="sm">
+          <Button type="submit" variant="secondary" size="sm">
             <RiPlayLine data-icon="inline-start" />
             Open a lobby
           </Button>
@@ -378,7 +378,10 @@ export function LobbyQuickPanel({
       <SeatRow members={active.members} maxPlayers={active.maxPlayers} />
 
       <div className="flex flex-col gap-2">
+        {/* The rail is persistent chrome, so it stays secondary — the gold
+            chip belongs to whatever page you're looking at. */}
         <Button
+          variant="secondary"
           size="sm"
           nativeButton={false}
           render={

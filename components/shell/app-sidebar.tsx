@@ -19,7 +19,7 @@ import {
   RiUser3Line,
   type RemixiconComponentType,
 } from "@remixicon/react";
-import { ChipMark } from "@/components/chip-mark";
+import { ChipaeLogo } from "@/components/chipae-logo";
 import { Button } from "@/components/ui/button";
 import { GAME_CATALOG } from "@/lib/game/catalog";
 import { cn } from "@/lib/utils";
@@ -95,12 +95,9 @@ export function AppSidebar({ username }: { username: string | null }) {
     <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-border bg-card/40 lg:flex">
       <Link
         href={username ? "/dashboard" : "/"}
-        className="flex items-center gap-2.5 px-5 pt-5 pb-2"
+        className="flex items-center px-5 pt-4 pb-2"
       >
-        <ChipMark className="size-8" />
-        <span className="font-heading text-xl text-foreground">
-          Chip<span className="text-primary">ae</span>
-        </span>
+        <ChipaeLogo size={82} className="w-1/2 mx-auto" priority />
       </Link>
 
       <nav className="flex flex-1 flex-col overflow-y-auto px-3 pb-4">
@@ -187,7 +184,10 @@ export function AppSidebar({ username }: { username: string | null }) {
           />
         ) : (
           <>
+            {/* Secondary: the rail persists across views, so the gold chip
+                stays reserved for each page's own primary action. */}
             <Button
+              variant="secondary"
               nativeButton={false}
               render={<RegisterLink>Take a seat</RegisterLink>}
             />

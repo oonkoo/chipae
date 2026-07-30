@@ -44,7 +44,9 @@ export {
   PopoverTrigger,
 } from "../components/ui/popover";
 export { AvatarChip } from "../components/avatar-chip";
-export { ChipMark } from "../components/chip-mark";
+// ChipMark was retired when the new Chipae logo landed. The logo itself is
+// not exported: it renders through next/image, which has no meaning outside
+// a Next app, so it would not work in a design built from this bundle.
 export {
   NunoCardFace,
   NunoCardBack,

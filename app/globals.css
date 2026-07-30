@@ -37,6 +37,9 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-game-edge: var(--game-edge);
+  --color-game-foreground: var(--game-foreground);
+  --color-game: var(--game);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -48,6 +51,22 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  /* Route loader — the logo breathes rather than spins (a wordmark
+     shouldn't rotate). See app/(platform)/loading.tsx. */
+  /* 2s matches animate-pulse, so the loader's glow and mark stay in phase. */
+  --animate-breathe: chipae-breathe 2s ease-in-out infinite;
+}
+
+@keyframes chipae-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
 }
 
 /*
@@ -90,6 +109,26 @@
   --sidebar-accent-foreground: oklch(0.28 0.05 290);
   --sidebar-border: oklch(0.25 0.05 290 / 12%);
   --sidebar-ring: oklch(0.72 0.14 82);
+
+  /* Button dimensionality — see design_handoff_chipae_buttons.
+     Deliberately identical in :root and .dark: a chip has the same
+     thickness whatever the room's lighting, like the Nuno card palette. */
+  /* Chip pill (primary) — a gold chip with thickness */
+  --primary-hi: oklch(0.9 0.14 88);
+  --primary-lo: oklch(0.74 0.15 82);
+  --primary-edge: oklch(0.56 0.13 74);
+  /* Candy 3D (game) — the logo's purple sweep as a squishy key */
+  --game: oklch(0.62 0.24 300);
+  --game-hi: oklch(0.74 0.21 305);
+  --game-lo: oklch(0.52 0.22 296);
+  --game-edge: oklch(0.34 0.15 297);
+  --game-ink: oklch(0.28 0.12 300);
+  --game-foreground: oklch(0.99 0.01 300);
+  /* Shared gloss — the top highlight both variants use */
+  --gloss-strong: oklch(1 0 0 / 85%);
+  --gloss: oklch(1 0 0 / 75%);
+  --gloss-weak: oklch(1 0 0 / 60%);
+  --btn-ink-shadow: oklch(0.16 0.05 295 / 55%);
 }
 
 .dark {
@@ -126,6 +165,21 @@
   --sidebar-accent-foreground: oklch(0.96 0.015 90);
   --sidebar-border: oklch(0.95 0.03 85 / 12%);
   --sidebar-ring: oklch(0.82 0.155 85);
+
+  /* Same button dimensionality as :root — see the note there. */
+  --primary-hi: oklch(0.9 0.14 88);
+  --primary-lo: oklch(0.74 0.15 82);
+  --primary-edge: oklch(0.56 0.13 74);
+  --game: oklch(0.62 0.24 300);
+  --game-hi: oklch(0.74 0.21 305);
+  --game-lo: oklch(0.52 0.22 296);
+  --game-edge: oklch(0.34 0.15 297);
+  --game-ink: oklch(0.28 0.12 300);
+  --game-foreground: oklch(0.99 0.01 300);
+  --gloss-strong: oklch(1 0 0 / 85%);
+  --gloss: oklch(1 0 0 / 75%);
+  --gloss-weak: oklch(1 0 0 / 60%);
+  --btn-ink-shadow: oklch(0.16 0.05 295 / 55%);
 }
 
 /*

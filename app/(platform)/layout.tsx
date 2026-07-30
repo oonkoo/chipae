@@ -4,7 +4,7 @@ import { getNotificationSummary } from "@/lib/notifications";
 import { listFriends, listPendingRequests } from "@/lib/friends";
 import { getActiveMembership, listLobbyMessages } from "@/lib/lobbies";
 import { AvatarChip } from "@/components/avatar-chip";
-import { ChipMark } from "@/components/chip-mark";
+import { ChipaeLogo } from "@/components/chipae-logo";
 import { NotificationBell } from "@/components/notification-bell";
 import { NotificationRow } from "@/components/notification-row";
 import { PresenceBeacon } from "@/components/presence-beacon";
@@ -47,12 +47,8 @@ export default async function PlatformLayout({
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
           <div className="flex h-14 items-center gap-3 px-4 sm:gap-4 sm:px-6">
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-2 lg:hidden"
-            >
-              <ChipMark className="size-7" />
-              <span className="sr-only">Chipae home</span>
+            <Link href="/dashboard" className="flex items-center lg:hidden">
+              <ChipaeLogo size={44} priority />
             </Link>
             <nav className="flex items-center gap-1 text-sm lg:hidden">
               <Link

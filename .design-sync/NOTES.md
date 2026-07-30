@@ -110,6 +110,51 @@ overlay in the light palette. Verified live — both render dark.
 - **`Dialog` / `Popover` pinned to `cardMode: "single"`** with viewports.
   Both portal and position `fixed`, so in a grid cell they escape.
 
+## Prop contracts are hand-written (`dtsPropsFor`) — do not remove
+
+Synth-entry mode has no `.d.ts` tree to read (`[DTS] parsed 0 .d.ts files`),
+so the extractor emitted `[key: string]: unknown` for **every** component —
+an empty API contract, which is the single thing the design agent codes
+against. The first sync shipped that way; it was caught on the second.
+
+`cfg.dtsPropsFor` now carries a hand-written props body for all 10. They are
+transcribed from the real component signatures, so **they go stale silently**
+when a component's props change — nothing cross-checks them. After changing
+any component's props, update the matching `dtsPropsFor` entry.
+
+Watch for: `Button`'s `variant` union (gained `game`) and `size` union
+(gained `xl`); `NunoCardFace.card` inlines the `NunoCard` shape from
+`lib/game/nuno/rules.ts`.
+
+Audit them with:
+
+```sh
+grep -l "\[key: string\]: unknown" ds-bundle/components/*/*/*.d.ts
+```
+
+Any hit means that component's contract is empty again.
+
+## The project also holds work authored IN Claude Design — never blind-delete
+
+`list_files` shows directories this converter does not produce:
+`templates/` (14 screen templates), `design_handoff_chipae_buttons/`, and
+`uploads/`. Those were authored in the Claude Design app by the user and are
+the source of the button-dimensionality tokens in `app/globals.css`.
+
+They sit outside the converter's output tree, so the atomic path's
+diff-derived deletes never touch them. **Never hand-write a plan `deletes`
+list broader than `.sync-diff.json`'s `upload.deletePaths`**, and never run
+the incremental close-out's blind reconciliation against this project.
+
+## next/image cannot serve the logo SVG
+
+`public/chipae_logo.svg` through `next/image` returns **HTTP 400 —
+`"url" parameter is valid but image type is not allowed`**. Next refuses SVG
+unless `images.dangerouslyAllowSVG` is set, and even then passes it through
+unoptimised. `components/chipae-logo.tsx` therefore uses a plain `<img>`
+(with an eslint-disable for `@next/next/no-img-element`). Switching the src
+back to `/chipae_logo.png` is what allows `next/image` to return again.
+
 ## Verification status for the 2026-07-30 run — READ THIS
 
 **Playwright was declined** (~200 MB), so:
@@ -136,10 +181,17 @@ which is correct — there is no grade state to carry forward.
 
 ## Re-sync risks
 
-- **`entry.tsx` and `componentSrcMap` drift.** They are hand-maintained and
-  duplicated. Rename or move a component and the sync breaks or silently drops
-  it, with no error beyond a lower component count. Check `components: N`
-  against the 11 expected.
+- **`entry.tsx`, `componentSrcMap` and `dtsPropsFor` drift.** All three are
+  hand-maintained and list the same components. Rename or move a component and
+  the sync breaks or silently drops it, with no error beyond a lower component
+  count. Check `components: N` against the **10** expected, and re-run the
+  empty-contract grep above.
+- **Conventions-header names are validated by hand.** Every class the header
+  names must exist in the *compiled* CSS, not just the theme: Tailwind only
+  emits utilities something actually uses, so `bg-game` and `border-game-edge`
+  are **absent** even though `--game` is defined. Designs get the pre-compiled
+  stylesheet, so naming an unemitted utility ships unstyled output. Validate
+  with `grep "\.<class>\b" .design-sync/.cache/chipae.css` before adding one.
 - **`build-css.mjs` regex.** Token extraction matches top-level `:root` /
   `.dark` blocks with `[^}]*`, which assumes no nested braces in those blocks.
   Adding a nested at-rule inside them breaks extraction (it throws if it finds

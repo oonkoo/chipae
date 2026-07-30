@@ -78,7 +78,9 @@ export default async function LobbiesPage() {
                   </select>
                 </div>
               </div>
-              <Button type="submit">Deal me in</Button>
+              <Button type="submit" size="lg">
+                Deal me in
+              </Button>
             </form>
           </CardContent>
         </Card>

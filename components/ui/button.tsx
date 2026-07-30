@@ -8,7 +8,14 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/80",
+        // Chip pill: a gold chip with thickness. Hover lifts 2px and the
+        // bottom edge grows; press sinks the face 4px while the edge
+        // collapses to 1px, so it reads as pushed into the table.
+        default:
+          "bg-[linear-gradient(180deg,var(--primary-hi)_0%,var(--primary)_52%,var(--primary-lo)_100%)] text-primary-foreground font-heading text-base tracking-[0.02em] shadow-[inset_0_1.5px_0_var(--gloss),0_5px_0_var(--primary-edge),0_14px_26px_-10px_color-mix(in_oklch,var(--primary),transparent_45%)] hover:-translate-y-0.5 hover:shadow-[inset_0_1.5px_0_var(--gloss-strong),0_7px_0_var(--primary-edge),0_18px_32px_-10px_color-mix(in_oklch,var(--primary),transparent_30%)] active:not-aria-[haspopup]:translate-y-1 active:shadow-[inset_0_1.5px_0_var(--gloss-weak),0_1px_0_var(--primary-edge),0_6px_14px_-8px_color-mix(in_oklch,var(--primary),transparent_40%)] disabled:shadow-[0_3px_0_color-mix(in_oklch,var(--primary-edge),transparent_65%)] motion-reduce:hover:translate-y-0 motion-reduce:active:translate-y-0",
+        // Candy 3D: the primary action on the felt, where gold is reserved
+        // for status (ready, won, NUNO).
+        game: "border-2 border-[var(--game-ink)] rounded-xl bg-[linear-gradient(180deg,var(--game-hi)_0%,var(--game)_55%,var(--game-lo)_100%)] text-game-foreground font-heading text-base [text-shadow:0_1px_2px_var(--btn-ink-shadow)] shadow-[inset_0_2px_0_var(--gloss-weak),0_6px_0_var(--game-edge),0_16px_30px_-12px_color-mix(in_oklch,var(--game),transparent_25%)] hover:-translate-y-0.5 hover:shadow-[inset_0_2px_0_var(--gloss),0_8px_0_var(--game-edge),0_22px_36px_-12px_color-mix(in_oklch,var(--game),transparent_10%)] active:not-aria-[haspopup]:translate-y-[5px] active:shadow-[inset_0_2px_0_var(--gloss-weak),0_1px_0_var(--game-edge),0_8px_16px_-10px_color-mix(in_oklch,var(--game),transparent_30%)] motion-reduce:hover:translate-y-0 motion-reduce:active:translate-y-0",
         outline:
           "border-border bg-input/30 hover:bg-input/50 hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground",
         secondary:
@@ -25,6 +32,7 @@ const buttonVariants = cva(
         xs: "h-6 gap-1 px-2.5 text-xs has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 [&_svg:not([class*='size-'])]:size-3",
         sm: "h-8 gap-1 px-3 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
         lg: "h-10 gap-1.5 px-4 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
+        xl: "h-12 gap-2 px-6 text-base has-data-[icon=inline-end]:pr-5 has-data-[icon=inline-start]:pl-5",
         icon: "size-9",
         "icon-xs": "size-6 [&_svg:not([class*='size-'])]:size-3",
         "icon-sm": "size-8",
