@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Design-system sync tooling and its bundled output — vendor code, and
+    // linting the bundle trips react-hooks rules on React's own internals.
+    ".ds-sync/**",
+    "ds-bundle/**",
   ]),
 ]);
 

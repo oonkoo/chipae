@@ -21,7 +21,7 @@ import { NUNO_CONFIG } from "@/lib/game/data/nuno";
 import type { NunoCard, NunoColor, NunoView } from "@/lib/game/nuno/rules";
 import { AvatarChip } from "@/components/avatar-chip";
 import {
-  NUNO_COLOR_HEX,
+  NUNO_COLOR_VAR,
   NunoCardBack,
   NunoCardFace,
   NunoCardFan,
@@ -453,7 +453,7 @@ export function NunoBoard({
       ? [...view.players.slice(meIndex + 1), ...view.players.slice(0, meIndex)]
       : view.players;
   const slots = SLOTS_BY_COUNT[Math.min(opponents.length, 5)] ?? [];
-  const activeHex = NUNO_COLOR_HEX[view.activeColor];
+  const activeColor = NUNO_COLOR_VAR[view.activeColor];
 
   // Nothing playable on your turn means the only move is to draw — say so
   // rather than leaving a hand of unresponsive cards.
@@ -494,7 +494,7 @@ export function NunoBoard({
       <div
         className="relative min-h-[30rem] flex-1 overflow-hidden rounded-3xl border border-white/10 p-3"
         style={{
-          background: `radial-gradient(120% 90% at 50% 45%, ${activeHex}22 0%, transparent 55%), radial-gradient(100% 80% at 50% 50%, oklch(0.27 0.055 290) 0%, oklch(0.2 0.045 290) 100%)`,
+          background: `radial-gradient(120% 90% at 50% 45%, color-mix(in srgb, ${activeColor} 13%, transparent) 0%, transparent 55%), radial-gradient(100% 80% at 50% 50%, var(--felt-center) 0%, var(--felt-edge) 100%)`,
           transition: "background 400ms ease",
         }}
       >
@@ -567,7 +567,9 @@ export function NunoBoard({
           <div className="relative" ref={discardRef}>
             <span
               className="absolute -inset-3 rounded-3xl blur-xl transition-colors duration-300"
-              style={{ backgroundColor: `${activeHex}55` }}
+              style={{
+                backgroundColor: `color-mix(in srgb, ${activeColor} 33%, transparent)`,
+              }}
             />
             <NunoCardFace
               key={view.topCard.id}
@@ -580,7 +582,7 @@ export function NunoBoard({
           <div className="flex flex-col items-center gap-1.5">
             <span
               className="size-6 rounded-full border-2 border-white/70 shadow"
-              style={{ backgroundColor: activeHex }}
+              style={{ backgroundColor: activeColor }}
               title={`Active color: ${view.activeColor}`}
             />
             <span
@@ -723,7 +725,7 @@ export function NunoBoard({
 
                     {wildCardId === card.id && (
                       <span className="absolute -top-12 left-1/2 flex -translate-x-1/2 gap-1 rounded-full border border-border bg-popover p-1.5 shadow-lg">
-                        {(Object.keys(NUNO_COLOR_HEX) as NunoColor[]).map(
+                        {(Object.keys(NUNO_COLOR_VAR) as NunoColor[]).map(
                           (color) => (
                             <button
                               key={color}
@@ -737,7 +739,7 @@ export function NunoBoard({
                                 )
                               }
                               className="size-7 cursor-pointer rounded-full border-2 border-white/70 transition-transform hover:scale-110"
-                              style={{ backgroundColor: NUNO_COLOR_HEX[color] }}
+                              style={{ backgroundColor: NUNO_COLOR_VAR[color] }}
                             />
                           )
                         )}

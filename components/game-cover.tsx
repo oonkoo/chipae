@@ -40,7 +40,7 @@ export function GameCover({
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(to top, rgba(10,8,20,0.88) 0%, rgba(10,8,20,0.35) 55%, rgba(10,8,20,0.05) 100%)",
+            "linear-gradient(to top, color-mix(in srgb, var(--cover-scrim) 88%, transparent) 0%, color-mix(in srgb, var(--cover-scrim) 35%, transparent) 55%, color-mix(in srgb, var(--cover-scrim) 5%, transparent) 100%)",
         }}
       />
       <span className="relative flex flex-col items-start gap-0.5 p-3 text-left">

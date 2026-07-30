@@ -128,6 +128,32 @@
   --sidebar-ring: oklch(0.82 0.155 85);
 }
 
+/*
+ * Game art palette — Nuno's printed deck, the felt, and the cover scrim.
+ * Deliberately NOT theme-scoped: a Nuno card is the same colour in light
+ * and dark, so these live in :root and .dark inherits them. The felt
+ * values are dark-theme values; if light mode ever ships, override
+ * --felt-* in .dark and give :root a light table.
+ */
+:root {
+  /* Card faces */
+  --nuno-red: #e0454c;
+  --nuno-blue: #3d63d8;
+  --nuno-green: #2fa46a;
+  --nuno-yellow: #f0b02c;
+  --nuno-wild: #1b1733;
+  /* Card stock + ink */
+  --nuno-paper: #ffffff;
+  --nuno-ink: #15112b;
+  --nuno-shade: #0b0918;
+  --nuno-oval: #f0b02c;
+  /* Table */
+  --felt-center: oklch(0.27 0.055 290);
+  --felt-edge: oklch(0.2 0.045 290);
+  /* Cover-art legibility scrim */
+  --cover-scrim: #0a0814;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

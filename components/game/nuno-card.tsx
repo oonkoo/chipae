@@ -5,19 +5,21 @@ import { cn } from "@/lib/utils";
 // frame, tilted oval, outlined glyph) wearing Chipae's chip motif — the
 // oval sits inside a dashed chip rim, and wilds show the four-color chip.
 
+// Values are palette tokens — see the "Game art palette" block in
+// app/globals.css. Tune the deck there, not here.
 const FACE_COLOR: Record<string, string> = {
-  red: "#e0454c",
-  blue: "#3d63d8",
-  green: "#2fa46a",
-  yellow: "#f0b02c",
-  wild: "#1b1733",
+  red: "var(--nuno-red)",
+  blue: "var(--nuno-blue)",
+  green: "var(--nuno-green)",
+  yellow: "var(--nuno-yellow)",
+  wild: "var(--nuno-wild)",
 };
 
 /** Chip quadrants — also the wild card's center mark. */
 const CHIP_CONIC =
-  "conic-gradient(#e0454c 0deg 90deg, #f0b02c 90deg 180deg, #2fa46a 180deg 270deg, #3d63d8 270deg 360deg)";
+  "conic-gradient(var(--nuno-red) 0deg 90deg, var(--nuno-yellow) 90deg 180deg, var(--nuno-green) 180deg 270deg, var(--nuno-blue) 270deg 360deg)";
 
-export const NUNO_COLOR_HEX: Record<NunoColor, string> = {
+export const NUNO_COLOR_VAR: Record<NunoColor, string> = {
   red: FACE_COLOR.red,
   blue: FACE_COLOR.blue,
   green: FACE_COLOR.green,
@@ -91,9 +93,9 @@ function glyphFor(card: NunoCard): string {
 
 /** White text with a dark keyline — the card-game numeral look. */
 const OUTLINED: React.CSSProperties = {
-  color: "#ffffff",
+  color: "var(--nuno-paper)",
   WebkitTextStrokeWidth: "0.085em",
-  WebkitTextStrokeColor: "#15112b",
+  WebkitTextStrokeColor: "var(--nuno-ink)",
   paintOrder: "stroke fill",
 };
 
@@ -155,11 +157,15 @@ export function NunoCardFace({
   return (
     <span
       className={cn(
-        "relative block shrink-0 overflow-hidden bg-white shadow-md select-none",
+        "relative block shrink-0 overflow-hidden shadow-md select-none",
         s.box,
         className
       )}
-      style={{ borderRadius: s.radius, padding: s.frame }}
+      style={{
+        borderRadius: s.radius,
+        padding: s.frame,
+        backgroundColor: "var(--nuno-paper)",
+      }}
     >
       {/* Face */}
       <span
@@ -180,10 +186,11 @@ export function NunoCardFace({
           }}
         />
         <span
-          className="absolute top-1/2 left-1/2 block rounded-[50%] bg-white"
+          className="absolute top-1/2 left-1/2 block rounded-[50%]"
           style={{
             width: "85%",
             height: "118%",
+            backgroundColor: "var(--nuno-paper)",
             transform: "translate(-50%, -50%) rotate(20deg)",
           }}
         />
@@ -199,7 +206,7 @@ export function NunoCardFace({
               className={cn("font-heading leading-none", s.center)}
               style={{
                 ...OUTLINED,
-                ...(isWild ? {} : { color: "#ffffff" }),
+                ...(isWild ? {} : { color: "var(--nuno-paper)" }),
               }}
             >
               {glyph}
@@ -221,7 +228,13 @@ export function NunoCardFace({
         {/* Unplayable: shaded, not desaturated — the white frame stays
             crisp so it still reads as a real card. */}
         {dimmed && (
-          <span className="absolute inset-0 bg-[#0b0918]/35" />
+          <span
+            className="absolute inset-0"
+            style={{
+              backgroundColor:
+                "color-mix(in srgb, var(--nuno-shade) 35%, transparent)",
+            }}
+          />
         )}
       </span>
     </span>
@@ -243,11 +256,15 @@ export function NunoCardBack({
   return (
     <span
       className={cn(
-        "relative block shrink-0 overflow-hidden bg-white shadow-md select-none",
+        "relative block shrink-0 overflow-hidden shadow-md select-none",
         s.box,
         className
       )}
-      style={{ borderRadius: s.radius, padding: s.frame }}
+      style={{
+        borderRadius: s.radius,
+        padding: s.frame,
+        backgroundColor: "var(--nuno-paper)",
+      }}
     >
       <span
         className="relative block h-full w-full overflow-hidden"
@@ -261,7 +278,7 @@ export function NunoCardBack({
           style={{
             width: "96%",
             height: "130%",
-            borderColor: "rgba(240,176,44,0.5)",
+            borderColor: "color-mix(in srgb, var(--nuno-oval) 50%, transparent)",
             transform: "translate(-50%, -50%) rotate(20deg)",
           }}
         />
@@ -270,7 +287,7 @@ export function NunoCardBack({
           style={{
             width: "85%",
             height: "118%",
-            backgroundColor: "#f0b02c",
+            backgroundColor: "var(--nuno-oval)",
             transform: "translate(-50%, -50%) rotate(20deg)",
           }}
         />
@@ -287,7 +304,7 @@ export function NunoCardBack({
                     : "text-base"
             )}
             style={{
-              color: "#1b1733",
+              color: "var(--nuno-wild)",
               transform: "rotate(20deg)",
             }}
           >

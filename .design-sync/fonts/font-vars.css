@@ -1,0 +1,14 @@
+/**
+ * The bindings app/globals.css maps its @theme font tokens onto.
+ *
+ * In the app, next/font defines --font-sans / --font-display /
+ * --font-geist-mono as class variables on <html>. Compiled Tailwind emits
+ * `--font-sans: var(--font-sans)` and nothing ever defines the right-hand
+ * side, so in a static bundle all three resolve to nothing. build-css.mjs
+ * prepends this file to the compiled stylesheet to close that gap.
+ */
+:root {
+  --font-sans: "Nunito Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Lilita One", ui-sans-serif, system-ui, sans-serif;
+  --font-geist-mono: "Geist Mono", ui-monospace, SFMono-Regular, monospace;
+}

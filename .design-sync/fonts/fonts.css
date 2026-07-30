@@ -1,0 +1,33 @@
+/**
+ * Chipae brand typography, shippable.
+ *
+ * The app loads these three families through next/font/google, so the repo
+ * contains no font files and no @font-face rules — a static bundle would fall
+ * back to system fonts and lose Lilita One entirely. These are the matching
+ * OFL-licensed latin subsets from fontsource.
+ *
+ * Regenerate: see .design-sync/NOTES.md.
+ */
+@font-face {
+  font-family: "Nunito Sans";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 1000;
+  src: url("./nunito-sans-latin-wght-normal.woff2") format("woff2-variations");
+}
+
+@font-face {
+  font-family: "Lilita One";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url("./lilita-one-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("./geist-mono-latin-wght-normal.woff2") format("woff2-variations");
+}

@@ -1,0 +1,41 @@
+{
+  "projectId": "c202f37f-133f-4159-b9a7-40763a784c07",
+  "shape": "package",
+  "pkg": "chipae",
+  "globalName": "Chipae",
+  "srcDir": "components",
+  "tsconfig": "tsconfig.json",
+  "cssEntry": ".design-sync/.cache/chipae.css",
+  "extraFonts": [".design-sync/fonts/fonts.css"],
+  "docsDir": ".design-sync/docs",
+  "readmeHeader": ".design-sync/conventions.md",
+  "guidelinesGlob": ["design/art-direction.md"],
+  "provider": {
+    "component": "ChipaeTheme"
+  },
+  "overrides": {
+    "Dialog": {
+      "cardMode": "single",
+      "primaryStory": "ConfirmLeave",
+      "viewport": "560x440"
+    },
+    "Popover": {
+      "cardMode": "single",
+      "primaryStory": "LobbySettings",
+      "viewport": "460x420"
+    }
+  },
+  "componentSrcMap": {
+    "Button": "components/ui/button.tsx",
+    "Card": "components/ui/card.tsx",
+    "Input": "components/ui/input.tsx",
+    "Label": "components/ui/label.tsx",
+    "Dialog": "components/ui/dialog.tsx",
+    "Popover": "components/ui/popover.tsx",
+    "AvatarChip": "components/avatar-chip.tsx",
+    "ChipMark": "components/chip-mark.tsx",
+    "NunoCardFace": "components/game/nuno-card.tsx",
+    "NunoCardBack": "components/game/nuno-card.tsx",
+    "NunoCardFan": "components/game/nuno-card.tsx"
+  }
+}
