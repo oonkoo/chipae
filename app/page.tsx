@@ -46,10 +46,19 @@ export default async function LandingPage() {
     redirect("/dashboard");
   }
 
-  const [playerCount, openTables] = await Promise.all([
-    db.user.count({ where: { username: { not: null } } }),
-    db.lobby.count({ where: { visibility: "PUBLIC", status: "OPEN" } }),
-  ]);
+  // The hero counts are decoration. This is the front door for people who
+  // aren't signed in, so it must still open if the database is unreachable
+  // — degrade to zeros and leave the failure in the logs to chase.
+  let playerCount = 0;
+  let openTables = 0;
+  try {
+    [playerCount, openTables] = await Promise.all([
+      db.user.count({ where: { username: { not: null } } }),
+      db.lobby.count({ where: { visibility: "PUBLIC", status: "OPEN" } }),
+    ]);
+  } catch (error) {
+    console.error("Landing page stats unavailable:", error);
+  }
 
   return (
     <div className="flex min-h-dvh flex-1">
