@@ -27,7 +27,10 @@ ADR Dependencies, Engine Compatibility, GDD Requirements Addressed
 
 ## Engine Reference (`docs/engine-reference/`)
 
-Version-pinned engine API snapshots. **Always check here before using any
-engine API** — the LLM's training data predates the pinned engine version.
+**Not applicable to this project.** The Godot / Unity / Unreal snapshots here are
+template leftovers — Chipae runs in the browser on Next.js 16 + React 19. Ignore
+them entirely (see the root `CLAUDE.md`).
 
-Current engine: see `docs/engine-reference/godot/VERSION.md`
+The equivalent source of truth for this stack is the bundled Next.js docs at
+`node_modules/next/dist/docs/` (App Router under `01-app/`). Check there before
+using any framework API you aren't certain about.

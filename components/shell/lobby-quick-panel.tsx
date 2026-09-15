@@ -109,7 +109,11 @@ function SeatRow({
                 <RiRobot2Line className="size-4.5" />
               </span>
             ) : (
-              <AvatarChip avatarId={member.avatarId} className="size-10" />
+              <AvatarChip
+                avatarId={member.avatarId}
+                seat={member.seat}
+                className="size-10"
+              />
             )
           ) : (
             <span className="flex size-10 items-center justify-center rounded-full border-2 border-dashed border-muted-foreground/30 text-base text-muted-foreground/50">

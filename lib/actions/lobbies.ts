@@ -9,7 +9,6 @@ import { getRelationship } from "@/lib/friends";
 import { LOBBY_LIMITS, nextFreeSeat, randomLobbyCode } from "@/lib/lobbies";
 import { acquireTxLock, lockKeys } from "@/lib/locks";
 import { pickBotName } from "@/lib/bots";
-import { applyQuit } from "@/lib/game/nuno/rules";
 import { loadActiveSession, persistGameState } from "@/lib/game/session";
 import { publishToLobby, publishToUser } from "@/lib/realtime/server";
 import { RATE, rateLimit } from "@/lib/rate-limit";
@@ -255,11 +254,15 @@ export async function leaveLobby(rawLobbyId: string): Promise<void> {
     if (lobby.status === "IN_GAME") {
       const loaded = await loadActiveSession(tx, lobby.id);
       if (loaded) {
-        const quit = applyQuit(loaded.state, me.id);
+        const quit = loaded.gameModule.quit(loaded.state, me.id, {
+          random: Math.random,
+          now: Date.now(),
+        });
         if (quit.ok) {
           await persistGameState(tx, {
             lobbyId: lobby.id,
             session: loaded.session,
+            gameModule: loaded.gameModule,
             state: quit.state,
             members: lobby.members,
           });

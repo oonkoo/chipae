@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import type { Prisma } from "@/lib/generated/prisma/client";
 import { getOnboardedUser } from "@/lib/user";
 import { acquireTxLock, lockKeys } from "@/lib/locks";
 import { publishToLobby } from "@/lib/realtime/server";
@@ -10,49 +11,67 @@ import { nextFreeSeat } from "@/lib/lobbies";
 import { pickBotName } from "@/lib/bots";
 import { RATE, rateLimit } from "@/lib/rate-limit";
 import { getGame } from "@/lib/game/catalog";
-import { NUNO_CONFIG } from "@/lib/game/data/nuno";
-import {
-  NUNO_COLORS,
-  applyDraw,
-  applyPass,
-  applyPlay,
-  applyQuit,
-  applyUnoCall,
-  chooseBotMove,
-  currentPlayer,
-  dealGame,
-  type NunoState,
-  type PlayResult,
-} from "@/lib/game/nuno/rules";
+import { getGameModule } from "@/lib/game/registry";
+import type {
+  ErasedGameModule,
+  MoveContext,
+  Transition,
+} from "@/lib/game/module";
 import { loadActiveSession, persistGameState } from "@/lib/game/session";
 
 export type GameActionResult = { ok: true } | { ok: false; error: string };
 
 const idSchema = z.string().min(1).max(64);
-const colorSchema = z.enum(NUNO_COLORS);
 
+/**
+ * Revalidate every surface a game mutation is visible on.
+ *
+ * The `/game` route matters most and was missing: it is the page players are
+ * actually looking at mid-match. Without it the action's own response carried
+ * no fresh data for that route, so each board had to fire a `router.refresh()`
+ * as well — a **second** full render, four-plus queries, for every single
+ * move. At a bot's pace that is several redundant renders a second, which is
+ * enough to exhaust the local dev pool (P1017).
+ */
 function refreshGame(lobbyId: string) {
+  revalidatePath(`/lobby/${lobbyId}/game`);
   revalidatePath(`/lobby/${lobbyId}`);
   revalidatePath("/dashboard");
+}
+
+type TransitionContext = {
+  gameModule: ErasedGameModule;
+  state: unknown;
+  /** The impurity a module is allowed (ADR-0005 Amendment 1). */
+  ctx: MoveContext;
+  lobby: {
+    id: string;
+    hostId: string;
+    members: Array<{ id: string; userId: string | null; isBot: boolean }>;
+  };
+};
+
+/**
+ * The server is the only place a module's randomness and clock come from.
+ * Stamped once per transition so every rule inside one move agrees on "now",
+ * and so a retry can never see a different time mid-way.
+ */
+function moveContext(): MoveContext {
+  return { random: Math.random, now: Date.now() };
 }
 
 /**
  * Load the lobby + active session under the lobby lock, run one rules
  * transition, persist the outcome. On a finished round the session closes,
  * the lobby reopens, and human seats must ready up again for the next hand.
- * Everything game-related is server-authoritative (ADR-0003).
+ * Everything game-related is server-authoritative (ADR-0003, ADR-0005) —
+ * which game is being played is decided by the registry, not by this file.
  */
 async function runTransition(
   lobbyId: string,
-  transition: (
-    state: NunoState,
-    lobby: {
-      id: string;
-      hostId: string;
-      members: Array<{ id: string; userId: string | null; isBot: boolean }>;
-    }
-  ) => PlayResult | string
+  transition: (ctx: TransitionContext) => Transition<unknown> | string
 ): Promise<GameActionResult> {
+  const ctx = moveContext();
   const outcome = await db.$transaction(async (tx) => {
     await acquireTxLock(tx, lockKeys.lobby(lobbyId));
 
@@ -80,13 +99,26 @@ async function runTransition(
     const loaded = await loadActiveSession(tx, lobbyId);
     if (!loaded) return "No game at this lobby right now";
 
-    const result = transition(loaded.state, lobby);
+    const result = transition({
+      gameModule: loaded.gameModule,
+      state: loaded.state,
+      // Which seats a connected human holds right now (Amendment 2). A seat
+      // whose human left has no member row, so it counts as a CPU.
+      ctx: {
+        ...ctx,
+        humans: lobby.members
+          .filter((m) => !m.isBot && m.userId !== null)
+          .map((m) => m.id),
+      },
+      lobby,
+    });
     if (typeof result === "string") return result;
     if (!result.ok) return result.error;
 
     await persistGameState(tx, {
       lobbyId,
       session: loaded.session,
+      gameModule: loaded.gameModule,
       state: result.state,
       members: lobby.members,
     });
@@ -117,7 +149,11 @@ export async function startGame(
   if (!game || !game.available) {
     return { ok: false, error: "That game isn't on the shelf yet" };
   }
+  // The catalog may list a game before its rules module ships.
+  const gameModule = getGameModule(game.id);
+  if (!gameModule) return { ok: false, error: "That game isn't ready yet" };
 
+  const ctx = moveContext();
   const outcome = await db.$transaction(async (tx) => {
     await acquireTxLock(tx, lockKeys.lobby(parsed.data));
 
@@ -125,9 +161,28 @@ export async function startGame(
       where: { id: parsed.data },
       include: { members: { orderBy: { seat: "asc" } } },
     });
-    if (!lobby || lobby.status !== "OPEN") {
-      return "This lobby isn't ready to deal";
+    if (!lobby) return "This lobby isn't ready to deal";
+
+    if (lobby.status !== "OPEN") {
+      // A lobby stuck IN_GAME with no *readable* session can never be played
+      // or reset from the UI: the game route bounces (nothing to render) and
+      // this action refuses (status isn't OPEN). That happens for real —
+      // deploying a change to a game's state shape leaves every in-flight save
+      // unparseable. Retire the dead session and carry on rather than leaving
+      // the table bricked.
+      const stale = await loadActiveSession(tx, lobby.id);
+      if (stale) return "This lobby isn't ready to deal";
+
+      await tx.gameSession.updateMany({
+        where: { lobbyId: lobby.id, endedAt: null },
+        data: { endedAt: new Date() },
+      });
+      await tx.lobby.update({
+        where: { id: lobby.id },
+        data: { status: "OPEN" },
+      });
     }
+
     if (lobby.hostId !== user.id) return "Only the host starts games";
     if (lobby.members.length < game.minPlayers) {
       return "Deal in at least one more seat";
@@ -139,11 +194,24 @@ export async function startGame(
       return "Everyone needs to be ready";
     }
 
-    // Each game ships its own dealer; Nuno is the only one on the shelf.
-    if (game.id !== NUNO_CONFIG.gameType) return "That game isn't ready yet";
-    const state = dealGame(lobby.members.map((m) => m.id));
+    // Which seats are human reaches the deal too (ADR-0005 Amendment 2): a
+    // game may open differently for people than for a table of CPUs.
+    const state = gameModule.deal(
+      lobby.members.map((m) => m.id),
+      {
+        ...ctx,
+        humans: lobby.members
+          .filter((m) => !m.isBot && m.userId !== null)
+          .map((m) => m.id),
+      }
+    );
     await tx.gameSession.create({
-      data: { lobbyId: lobby.id, gameType: game.id, state },
+      // The module owns the shape; Prisma just stores it as Json.
+      data: {
+        lobbyId: lobby.id,
+        gameType: game.id,
+        state: state as Prisma.InputJsonValue,
+      },
     });
     await tx.lobby.update({
       where: { id: lobby.id },
@@ -159,6 +227,28 @@ export async function startGame(
 }
 
 /**
+ * Make a move in the running game. The move's shape is the game's business:
+ * the module zod-parses it before anything touches state, and validates
+ * turn and ownership itself.
+ */
+export async function submitMove(
+  rawLobbyId: string,
+  rawMove: unknown
+): Promise<GameActionResult> {
+  const user = await getOnboardedUser();
+  const lobbyId = idSchema.safeParse(rawLobbyId);
+  if (!lobbyId.success) return { ok: false, error: "Invalid lobby" };
+
+  return runTransition(lobbyId.data, ({ gameModule, state, ctx, lobby }) => {
+    const me = lobby.members.find((m) => m.userId === user.id);
+    if (!me) return "You're not seated here";
+    const move = gameModule.parseMove(rawMove);
+    if (!move.ok) return move.error;
+    return gameModule.apply(state, me.id, move.move, ctx);
+  });
+}
+
+/**
  * Quit the running game: eliminated from this hand, but still seated in
  * the lobby. Remaining humans play on; if none remain, the session ends
  * as abandoned (no winner recorded).
@@ -168,10 +258,45 @@ export async function quitGame(rawLobbyId: string): Promise<GameActionResult> {
   const parsed = idSchema.safeParse(rawLobbyId);
   if (!parsed.success) return { ok: false, error: "Invalid lobby" };
 
-  return runTransition(parsed.data, (state, lobby) => {
+  return runTransition(parsed.data, ({ gameModule, state, ctx, lobby }) => {
     const me = lobby.members.find((m) => m.userId === user.id);
     if (!me) return "You're not seated here";
-    return applyQuit(state, me.id);
+    return gameModule.quit(state, me.id, ctx);
+  });
+}
+
+/**
+ * Play one move for the seat on the clock, when that seat isn't going to play
+ * it themselves — a CPU, or a human whose turn clock has expired.
+ *
+ * Any seated member's client may call this on a timer; the lobby lock plus the
+ * whose-turn check make duplicate calls harmless. A seat whose human left
+ * mid-round is played as a bot so the game never stalls.
+ */
+export async function advanceBot(rawLobbyId: string): Promise<GameActionResult> {
+  const user = await getOnboardedUser();
+  const parsed = idSchema.safeParse(rawLobbyId);
+  if (!parsed.success) return { ok: false, error: "Invalid lobby" };
+
+  return runTransition(parsed.data, ({ gameModule, state, ctx, lobby }) => {
+    const me = lobby.members.find((m) => m.userId === user.id);
+    if (!me) return "You're not seated here";
+
+    const seatId = gameModule.currentMemberId(state);
+    if (!seatId) return "Nobody is on the clock";
+
+    // A CPU seat is always fair game. A human seat is only played for them
+    // once their own turn clock has run out — checked against the server's
+    // clock inside the module, so a fast client cannot jump the gun.
+    const member = lobby.members.find((m) => m.id === seatId);
+    const isHuman = !!member && !member.isBot && member.userId !== null;
+    if (isHuman && !gameModule.turnExpired(state, ctx.now)) {
+      return "It's a player's turn";
+    }
+
+    const move = gameModule.botMove(state, seatId, ctx);
+    if (move === null) return "Nothing for the CPU to do";
+    return gameModule.apply(state, seatId, move, ctx);
   });
 }
 
@@ -224,105 +349,6 @@ export async function sendGameChat(
     scope: "game",
   });
   return { ok: true };
-}
-
-/** Play a card from your hand (wilds carry the chosen color). */
-export async function playCard(
-  rawLobbyId: string,
-  rawCardId: string,
-  rawChosenColor?: string,
-  declareUno?: boolean
-): Promise<GameActionResult> {
-  const user = await getOnboardedUser();
-  const lobbyId = idSchema.safeParse(rawLobbyId);
-  const cardId = idSchema.safeParse(rawCardId);
-  if (!lobbyId.success || !cardId.success) {
-    return { ok: false, error: "Invalid play" };
-  }
-  const chosenColor =
-    rawChosenColor === undefined
-      ? undefined
-      : colorSchema.safeParse(rawChosenColor);
-  if (chosenColor && !chosenColor.success) {
-    return { ok: false, error: "Invalid color" };
-  }
-
-  return runTransition(lobbyId.data, (state, lobby) => {
-    const me = lobby.members.find((m) => m.userId === user.id);
-    if (!me) return "You're not seated here";
-    return applyPlay(state, me.id, cardId.data, {
-      chosenColor: chosenColor?.data,
-      declareUno: declareUno === true,
-    });
-  });
-}
-
-/** Draw one card; keeps the turn only if the drawn card is playable. */
-export async function drawCard(rawLobbyId: string): Promise<GameActionResult> {
-  const user = await getOnboardedUser();
-  const parsed = idSchema.safeParse(rawLobbyId);
-  if (!parsed.success) return { ok: false, error: "Invalid lobby" };
-
-  return runTransition(parsed.data, (state, lobby) => {
-    const me = lobby.members.find((m) => m.userId === user.id);
-    if (!me) return "You're not seated here";
-    return applyDraw(state, me.id);
-  });
-}
-
-/** Keep the drawn card and end the turn. */
-export async function passTurn(rawLobbyId: string): Promise<GameActionResult> {
-  const user = await getOnboardedUser();
-  const parsed = idSchema.safeParse(rawLobbyId);
-  if (!parsed.success) return { ok: false, error: "Invalid lobby" };
-
-  return runTransition(parsed.data, (state, lobby) => {
-    const me = lobby.members.find((m) => m.userId === user.id);
-    if (!me) return "You're not seated here";
-    return applyPass(state, me.id);
-  });
-}
-
-/** Call "Nuno!" on your last card before someone else acts. */
-export async function callNuno(rawLobbyId: string): Promise<GameActionResult> {
-  const user = await getOnboardedUser();
-  const parsed = idSchema.safeParse(rawLobbyId);
-  if (!parsed.success) return { ok: false, error: "Invalid lobby" };
-
-  return runTransition(parsed.data, (state, lobby) => {
-    const me = lobby.members.find((m) => m.userId === user.id);
-    if (!me) return "You're not seated here";
-    return applyUnoCall(state, me.id);
-  });
-}
-
-/**
- * Advance one CPU turn. Any seated member's client may call this on a
- * timer; the lock plus the whose-turn check make duplicate calls no-ops.
- * A seat whose human left mid-round is played as a bot so the game never
- * stalls.
- */
-export async function advanceBot(rawLobbyId: string): Promise<GameActionResult> {
-  const user = await getOnboardedUser();
-  const parsed = idSchema.safeParse(rawLobbyId);
-  if (!parsed.success) return { ok: false, error: "Invalid lobby" };
-
-  return runTransition(parsed.data, (state, lobby) => {
-    const me = lobby.members.find((m) => m.userId === user.id);
-    if (!me) return "You're not seated here";
-
-    const seat = currentPlayer(state);
-    const member = lobby.members.find((m) => m.id === seat.id);
-    if (member && !member.isBot) return "It's a player's turn";
-
-    const move = chooseBotMove(state);
-    if (move.kind === "draw") return applyDraw(state, seat.id);
-    if (move.kind === "pass") return applyPass(state, seat.id);
-    return applyPlay(state, seat.id, move.cardId, {
-      chosenColor: move.chosenColor,
-      declareUno: true, // bots never forget
-    });
-  });
 }
 
 /** Host fills every open seat with a CPU before dealing. */

@@ -4,6 +4,15 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Empire Wars: the board's stage is wider than it is tall — wide enough for
+   the 3:2 ring and its 3:2 painted centerpiece. Below that the ring is square
+   and so is the art, so a painted frame is never cropped. */
+@custom-variant ew-stage-wide {
+  @container stage (aspect-ratio > 1.25) {
+    @slot;
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -20,6 +29,7 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+  --color-chart-6: var(--chart-6);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
@@ -57,6 +67,125 @@
   --animate-breathe: chipae-breathe 2s ease-in-out infinite;
 }
 
+/* Empire Wars — dice tumble and the piece's hop between tiles.
+   The tumble deliberately exceeds art-direction's 150–250ms micro-interaction
+   budget: a die that doesn't tumble doesn't read as a die (GDD > Motion). */
+@keyframes ew-tumble {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+  25% {
+    transform: translateY(-14px) rotate(160deg) scale(1.12);
+  }
+  50% {
+    transform: translateY(2px) rotate(320deg) scale(0.96);
+  }
+  75% {
+    transform: translateY(-5px) rotate(430deg) scale(1.04);
+  }
+  100% {
+    transform: translateY(0) rotate(540deg) scale(1);
+  }
+}
+
+@keyframes ew-settle {
+  0% {
+    transform: scale(1.3);
+  }
+  60% {
+    transform: scale(0.94);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Each step of a piece walking the board arcs slightly, so movement reads as
+   hopping tile to tile rather than sliding. */
+@keyframes ew-hop {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -30%;
+  }
+}
+
+/* A ring in the owner's colour leaves a tile when someone lands on it, buys
+   it or wins it: who that city pays, said without a word. */
+@keyframes ew-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(1.22);
+    opacity: 0;
+  }
+}
+
+/* A monument settles onto its city — the table's one celebration, so it's
+   allowed a touch of overshoot. */
+@keyframes ew-rise {
+  0% {
+    transform: translateY(35%) scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(-4%) scale(1.06);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* The brass flare behind a rising monument. */
+@keyframes ew-glint {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* The monument card in the middle of the table: arrives, holds, leaves. */
+@keyframes ew-moment {
+  0% {
+    transform: translateY(12px) scale(0.94);
+    opacity: 0;
+  }
+  16%,
+  84% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-6px) scale(0.98);
+    opacity: 0;
+  }
+}
+
+/* The same card for reduced motion: it fades, nothing moves. */
+@keyframes ew-moment-fade {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  12%,
+  88% {
+    opacity: 1;
+  }
+}
+
 @keyframes chipae-breathe {
   0%,
   100% {
@@ -72,7 +201,9 @@
 /*
  * Chipae tokens — "night lounge, table stakes" (see design/art-direction.md).
  * Dark is the default app experience (html.dark in app/layout.tsx).
- * chart-1..5 double as player seat colors: gold, mint, coral, sky, lavender.
+ * chart-1..6 double as player seat colors, in seat order: gold, mint, coral,
+ * sky, lavender, rose. Six because a table seats six (LOBBY_LIMITS.maxPlayers)
+ * — five would leave the last seat with no color at a full table.
  */
 :root {
   --background: oklch(0.97 0.01 290);
@@ -100,6 +231,7 @@
   --chart-3: oklch(0.62 0.18 25);
   --chart-4: oklch(0.6 0.12 235);
   --chart-5: oklch(0.6 0.12 305);
+  --chart-6: oklch(0.62 0.14 345);
   --radius: 0.75rem;
   --sidebar: oklch(0.95 0.015 290);
   --sidebar-foreground: oklch(0.25 0.05 290);
@@ -157,6 +289,7 @@
   --chart-3: oklch(0.72 0.18 25);
   --chart-4: oklch(0.75 0.12 235);
   --chart-5: oklch(0.75 0.12 305);
+  --chart-6: oklch(0.75 0.14 345);
   --sidebar: oklch(0.21 0.048 290);
   --sidebar-foreground: oklch(0.96 0.015 90);
   --sidebar-primary: oklch(0.82 0.155 85);
@@ -206,6 +339,236 @@
   --felt-edge: oklch(0.2 0.045 290);
   /* Cover-art legibility scrim */
   --cover-scrim: #0a0814;
+
+  /* ── Empire Wars ──────────────────────────────────────────────────────
+     The Emperor's Map Table: a walnut table with brass fittings, enamel
+     empire colours and parchment cards, under warm lamplight. Like the
+     Nuno deck these are game art, not app theme — a board looks the same
+     in any theme, so they live here and .dark inherits them. The ew-*
+     utilities below assemble them into surfaces. */
+
+  /* Walnut: the table, the tiles, the panels. The grain is a painted,
+     seamless tile (public/games/empire-wars/board/walnut.webp, evenly lit);
+     surfaces tint it with the colours below. */
+  --ew-wood-deep: #150c06;
+  --ew-wood: #2b190d;
+  --ew-wood-hi: #4d2f18;
+  --ew-walnut: url("/games/empire-wars/board/walnut.webp");
+  --ew-felt-center: #3a2312;
+  --ew-felt-edge: #0f0804;
+
+  /* Brass: frames, plates, the primary button. */
+  --ew-brass-hi: #f6d98c;
+  --ew-brass: #cf9d40;
+  --ew-brass-lo: #8c6223;
+  --ew-brass-edge: #4a3110;
+  /* Brass as type and icons on walnut. */
+  --ew-gold: #e8b95a;
+  --ew-gold-edge: #8c6223;
+
+  /* Parchment: Fortune and Royal Decree, and the ink written on them. The
+     fibre is a painted, seamless tile (board/parchment.webp). */
+  --ew-parchment-tex: url("/games/empire-wars/board/parchment.webp");
+  --ew-parchment: #eedfbb;
+  --ew-parchment-lo: #c8a86f;
+  --ew-parchment-ink: #3a2413;
+
+  /* Ink for bright plates, ivory type for wood, lapis for the inlay. */
+  --ew-ink: #1c1008;
+  --ew-paper: #f6ead0;
+  --ew-lapis: #1f4e8c;
+
+  /* Motion. Things that arrive ease out fast (ease-out-quart); the pulse is
+     a medium-frequency cue, the monument moment a rare one, so it lingers. */
+  --ew-ease-arrive: cubic-bezier(0.165, 0.84, 0.44, 1);
+  --ew-pulse-ms: 560ms;
+  --ew-rise-ms: 700ms;
+  --ew-moment-ms: 2600ms;
+
+  /* Light and shade, for bevels and drop shadows. */
+  --ew-shine: oklch(1 0 0 / 16%);
+  --ew-shade: oklch(0 0 0 / 30%);
+  --ew-shadow: oklch(0 0 0 / 60%);
+
+  /* Empire bands — the property-strip analogue, cheap to rich, as enamel.
+     Each keeps the hue of its empire's crest medallion and monument base in
+     public/games/empire-wars/, so band, crest and monument read as one. */
+  --ew-district-1: #1f8a82; /* Ottoman Empire — Iznik teal */
+  --ew-district-2: #a13c9a; /* Rome — Tyrian purple */
+  --ew-district-3: #5a7d9c; /* Mongol Empire — steppe steel */
+  --ew-district-4: #8a7340; /* Ming China — bronze */
+  --ew-district-5: #cc5a2c; /* Mughal Empire — red sandstone */
+  --ew-district-6: #3a5ad0; /* France — royal blue */
+  --ew-district-7: #d2302b; /* Britain — crimson */
+  --ew-district-8: #2e9555; /* Bengal — green */
+
+  /* Money moving: what you gain, what you pay, and the turn clock's last
+     seconds. Game art like the rest — the same in any theme. */
+  --ew-gain: oklch(0.8 0.15 160);
+  --ew-loss: oklch(0.7 0.19 30);
+}
+
+/* ── Empire Wars materials ─────────────────────────────────────────────────
+   The board's surfaces, assembled from the --ew-* tokens so its components
+   carry no colour of their own. Plaques, cards and panels take two optional
+   box-shadow layers from the caller: --ew-ring (an owner's colour) and
+   --ew-glow (you're here; it's your move). */
+
+/* Re-points the platform's tokens for everything on the table — buttons,
+   borders, muted text, inputs, popovers — so shared components wear walnut
+   and brass here and nowhere else. The `game` button turns brass. Portaled
+   content (a tile's card) takes the class itself. */
+@utility ew-scope {
+  --background: var(--ew-wood-deep);
+  --foreground: var(--ew-paper);
+  --card: var(--ew-wood);
+  --card-foreground: var(--ew-paper);
+  --popover: var(--ew-wood);
+  --popover-foreground: var(--ew-paper);
+  --muted: color-mix(in oklab, var(--ew-wood-hi) 70%, var(--ew-wood));
+  --muted-foreground: color-mix(in oklab, var(--ew-paper) 66%, var(--ew-wood));
+  --accent: var(--ew-wood-hi);
+  --accent-foreground: var(--ew-paper);
+  --border: color-mix(in oklab, var(--ew-brass-lo) 65%, transparent);
+  --input: color-mix(in oklab, var(--ew-brass-lo) 45%, var(--ew-wood));
+  --ring: var(--ew-brass);
+  --game: var(--ew-brass);
+  --game-hi: var(--ew-brass-hi);
+  --game-lo: var(--ew-brass-lo);
+  --game-edge: var(--ew-brass-edge);
+  --game-ink: var(--ew-brass-edge);
+  --game-foreground: var(--ew-ink);
+}
+
+/* The table around the ring. */
+@utility ew-table {
+  background: radial-gradient(100% 80% at 50% 45%, var(--ew-felt-center) 0%, var(--ew-felt-edge) 100%);
+  border: 1px solid var(--ew-brass-edge);
+  box-shadow:
+    inset 0 0 0 1px var(--ew-shine),
+    inset 0 0 70px var(--ew-shadow);
+}
+
+/* The carved frame the tiles sit in; the gaps between tiles show its wood. */
+@utility ew-frame {
+  background:
+    linear-gradient(135deg, color-mix(in oklab, var(--ew-wood-hi) 30%, transparent) 0%, color-mix(in oklab, var(--ew-wood-deep) 76%, transparent) 35%, color-mix(in oklab, var(--ew-wood) 58%, transparent) 65%, color-mix(in oklab, var(--ew-wood-deep) 80%, transparent) 100%),
+    var(--ew-walnut) 0 0 / 320px 320px repeat,
+    var(--ew-wood);
+  border: 1px solid var(--ew-brass-lo);
+  box-shadow:
+    inset 0 0 0 2px var(--ew-wood-deep),
+    inset 0 0 0 3px color-mix(in oklab, var(--ew-brass) 55%, transparent),
+    0 18px 40px -16px var(--ew-shadow);
+}
+
+/* The table's centre: the painted centerpiece, set into the frame. The art
+   carries its own gilt border; this only seats it — the walnut shows until
+   the image paints. */
+@utility ew-centerpiece {
+  overflow: hidden;
+  background: var(--ew-wood);
+  box-shadow:
+    0 0 0 1px var(--ew-brass-lo),
+    0 8px 22px -10px var(--ew-shadow);
+}
+
+/* A city tile: a walnut plaque in a brass hairline, bevelled. Each tile sets
+   --ew-grain to start the grain somewhere else, so neighbours don't repeat. */
+@utility ew-plaque {
+  background:
+    linear-gradient(180deg, color-mix(in oklab, var(--ew-wood-hi) 22%, transparent) 0%, color-mix(in oklab, var(--ew-wood) 60%, transparent) 45%, color-mix(in oklab, var(--ew-wood-deep) 84%, transparent) 100%),
+    var(--ew-walnut) var(--ew-grain, 0 0) / 256px 256px repeat,
+    var(--ew-wood);
+  border: 1px solid var(--ew-brass-lo);
+  box-shadow:
+    var(--ew-ring, 0 0 #0000),
+    var(--ew-glow, 0 0 #0000),
+    inset 0 1px 0 var(--ew-shine),
+    inset 0 -1px 0 var(--ew-shade),
+    0 2px 3px var(--ew-shadow);
+}
+
+/* A corner: the plaque, framed twice in brass. */
+@utility ew-plaque-ornate {
+  background:
+    radial-gradient(circle at 50% 38%, color-mix(in oklab, var(--ew-wood-hi) 18%, transparent) 0%, color-mix(in oklab, var(--ew-wood) 64%, transparent) 55%, color-mix(in oklab, var(--ew-wood-deep) 86%, transparent) 100%),
+    var(--ew-walnut) var(--ew-grain, 0 0) / 256px 256px repeat,
+    var(--ew-wood);
+  border: 2px solid var(--ew-brass);
+  box-shadow:
+    var(--ew-ring, 0 0 #0000),
+    var(--ew-glow, 0 0 #0000),
+    inset 0 0 0 2px var(--ew-wood-deep),
+    inset 0 0 0 3px var(--ew-brass-lo),
+    inset 0 0 18px var(--ew-shadow),
+    0 2px 4px var(--ew-shadow);
+}
+
+/* Fortune and Royal Decree: a parchment card in a brass frame. */
+@utility ew-card {
+  background:
+    radial-gradient(ellipse at 50% 40%, transparent 25%, color-mix(in oklab, var(--ew-parchment-lo) 60%, transparent) 100%),
+    var(--ew-parchment-tex) var(--ew-grain, 0 0) / 256px 256px repeat,
+    var(--ew-parchment);
+  color: var(--ew-parchment-ink);
+  border: 1px solid var(--ew-brass-lo);
+  box-shadow:
+    var(--ew-ring, 0 0 #0000),
+    var(--ew-glow, 0 0 #0000),
+    inset 0 0 0 2px color-mix(in oklab, var(--ew-brass) 55%, transparent),
+    inset 0 0 12px color-mix(in oklab, var(--ew-parchment-ink) 30%, transparent),
+    0 2px 3px var(--ew-shadow);
+}
+
+/* An empire's colour as a strip of enamel. Set --ew-enamel to its band. */
+@utility ew-enamel {
+  background: linear-gradient(180deg, color-mix(in oklab, var(--ew-enamel) 62%, white) 0%, var(--ew-enamel) 40%, color-mix(in oklab, var(--ew-enamel) 72%, black) 100%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--ew-enamel) 55%, black),
+    0 1px 0 var(--ew-shine);
+}
+
+/* A plate for a number, bevelled like a coin. Set --ew-plate to its colour. */
+@utility ew-plate {
+  background: linear-gradient(180deg, color-mix(in oklab, var(--ew-plate) 55%, white) 0%, var(--ew-plate) 45%, color-mix(in oklab, var(--ew-plate) 72%, black) 100%);
+  color: var(--ew-ink);
+  box-shadow:
+    inset 0 1px 0 var(--ew-shine),
+    inset 0 0 0 1px var(--ew-shade),
+    0 1px 1px var(--ew-shadow);
+}
+
+/* A panel on the table: the prompt, auctions, trades, the players. */
+@utility ew-panel {
+  background: linear-gradient(180deg, color-mix(in oklab, var(--ew-wood-hi) 90%, transparent) 0%, color-mix(in oklab, var(--ew-wood-deep) 94%, transparent) 100%);
+  border: 1px solid var(--ew-brass-lo);
+  box-shadow:
+    var(--ew-glow, 0 0 #0000),
+    inset 0 0 0 1px color-mix(in oklab, var(--ew-brass-hi) 14%, transparent),
+    inset 0 1px 0 var(--ew-shine),
+    0 10px 24px -12px var(--ew-shadow);
+}
+
+/* A dialog over the table: a walnut board framed twice in brass. */
+@utility ew-dialog {
+  background: linear-gradient(180deg, var(--ew-wood) 0%, var(--ew-wood-deep) 100%);
+  border: 2px solid var(--ew-brass);
+  box-shadow:
+    inset 0 0 0 3px var(--ew-wood-deep),
+    inset 0 0 0 4px var(--ew-brass-lo),
+    0 24px 60px -20px var(--ew-shadow);
+}
+
+/* The dim behind a dialog. */
+@utility ew-backdrop {
+  background: color-mix(in oklab, var(--ew-wood-deep) 78%, transparent);
+}
+
+/* A small walnut chip in a brass hairline: pills, unpicked options. */
+@utility ew-chip {
+  background: color-mix(in oklab, var(--ew-wood-deep) 70%, transparent);
+  border: 1px solid color-mix(in oklab, var(--ew-brass-lo) 70%, transparent);
 }
 
 @layer base {

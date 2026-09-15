@@ -6,7 +6,7 @@ import {
   listLobbyGameHistory,
   listLobbyMessages,
 } from "@/lib/lobbies";
-import { parseState, viewFor } from "@/lib/game/nuno/rules";
+import { getGameModule } from "@/lib/game/registry";
 import { getGame } from "@/lib/game/catalog";
 import { listFriends } from "@/lib/friends";
 import { LobbyRoom, type LobbyView } from "./lobby-room";
@@ -40,16 +40,23 @@ export default async function LobbyPage({
     getLatestGameSession(lobby.id),
     listLobbyGameHistory(lobby.id),
   ]);
-  // Full game state stays server-side — the client only ever gets the
-  // viewer's projection (own hand, counts for everyone else).
-  const gameState = session ? parseState(session.state) : null;
+  // Full game state stays server-side. The room only needs to know whether
+  // a game is live and how the last one finished — the standings the game's
+  // module reports (ADR-0005), never its state.
+  const gameModule = session ? getGameModule(session.gameType) : null;
+  const gameState =
+    session && gameModule ? gameModule.parseState(session.state) : null;
   const myMemberId =
     lobby.members.find((m) => m.userId === user.id)?.id ?? null;
   const game =
-    session && gameState
+    session && gameModule && gameState
       ? {
           active: session.endedAt === null,
-          view: viewFor(gameState, myMemberId),
+          standings: gameModule.standings(gameState),
+          youEliminated:
+            gameModule
+              .standings(gameState)
+              .find((s) => s.memberId === myMemberId)?.eliminated ?? false,
         }
       : null;
   const seatedIds = new Set(
@@ -64,6 +71,7 @@ export default async function LobbyPage({
     visibility: lobby.visibility,
     status: lobby.status,
     maxPlayers: lobby.maxPlayers,
+    gameType: lobby.gameType,
     members: lobby.members.map((m) => ({
       id: m.id,
       userId: m.userId,

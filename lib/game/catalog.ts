@@ -1,4 +1,5 @@
 import { NUNO_CONFIG } from "@/lib/game/data/nuno";
+import { EMPIRE_WARS_CONFIG } from "@/lib/game/data/empire-wars";
 
 // The platform's game shelf. Every surface that lists or starts games
 // (sidebar, home page, start action) reads this — adding a game means
@@ -32,6 +33,16 @@ export const GAME_CATALOG: GameDefinition[] = [
     cover: "/games/nuno/cover.png",
     minPlayers: NUNO_CONFIG.minPlayers,
     maxPlayers: NUNO_CONFIG.maxPlayers,
+    available: true,
+  },
+  {
+    id: EMPIRE_WARS_CONFIG.gameType,
+    name: "Empire Wars",
+    tagline: "Build an empire. Collect the tribute.",
+    logo: "/games/empire-wars/empirewars_logo.png",
+    cover: "/games/empire-wars/cover.png",
+    minPlayers: EMPIRE_WARS_CONFIG.minPlayers,
+    maxPlayers: EMPIRE_WARS_CONFIG.maxPlayers,
     available: true,
   },
 ];

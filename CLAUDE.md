@@ -19,8 +19,14 @@ npm run db:dev     # local Prisma Postgres server (offline dev) — keep running
 npm run db:push    # sync schema to the DB in DATABASE_URL (local dev only)
 npm run db:migrate # create/apply migrations
 npm run db:cloud -- migrate deploy   # run any prisma command against CLOUD_DATABASE_URL
+npm run db:check   # prove a URL in .env actually connects — prints host + table
+                   # count, never credentials. `-- CLOUD_DATABASE_URL` to pick another.
 npm run db:studio  # Prisma Studio
+npm start          # next start (production server)
 ```
+
+One-off, not a dependency: `npm i --no-save sharp && node scripts/make-icons.mjs`
+regenerates `app/icon.png` / `app/apple-icon.png` from `public/chipae_logo.png`.
 
 Single test file / single case:
 
@@ -81,9 +87,23 @@ Pusher Channels behind `lib/realtime/`. Non-negotiable rules:
 4. Publish the realtime hint, then `revalidatePath` every surface that renders the changed data (a mutation usually touches the lobby route *and* `/dashboard` *and* sometimes the shell layout — see `refreshLobby()` / `refreshGame()`).
 5. Return `{ ok: true } | { ok: false; error: string }` — form-post actions redirect with `?error=…` instead.
 
-### Games — ADR-0003 / ADR-0004
+### Games — ADR-0003 / ADR-0004 / ADR-0005
 
-The lobby is the persistent group; games are interchangeable activities started inside it. Adding a game means: a `lib/game/catalog.ts` entry + a rules module + a dealer branch — **not** new lobby UI.
+The lobby is the persistent group; games are interchangeable activities started inside it. **Every game implements one interface** (`lib/game/module.ts`), and the platform resolves it by `GameSession.gameType` — no platform file names a specific game.
+
+Adding a game is five files, none of them platform code:
+
+1. `lib/game/<id>/rules.ts` — pure rules (below), plus `lib/game/data/<id>.ts` for tuning.
+2. `lib/game/<id>/module.ts` — the `GameModule` adapter over those rules.
+3. `components/game/<id>/board.tsx` — the surface.
+4. Register in **both** `lib/game/registry.ts` (server) and `components/game/boards.tsx` (client) — keyed alike.
+5. A `lib/game/catalog.ts` entry (the player-facing shelf; it may list a game before its module ships — `startGame` fails closed).
+
+`tests/game-module.test.ts` runs the contract over every registered module automatically — Json round-trip, view-is-smaller-than-state (no hidden-info leak), bots never propose rejected moves, bots can finish a game.
+
+- **`Standing[]` is the only outcome the platform understands**: `{ memberId, detail?, eliminated? }` in finishing order, where `detail` is free text the game owns ("3 cards left", "$12,400 empire"). `decorateStandings()` in `lib/game/session.ts` attaches names and avatars — a game never handles identity.
+- **One write path for moves**: `submitMove(lobbyId, move)`. The module zod-parses the move via its `moveSchema` before anything touches state.
+- The interface assumes **turn-based play, one seat on the clock**. Simultaneous decisions (auctions, pay-or-fight windows) must live inside a game's own state as a pending phase with a deadline — serverless means there is no server clock.
 
 - **Pure rules** in `lib/game/<game>/rules.ts`: no DB, no I/O, RNG injected, fully unit-testable. Tuning values live in `lib/game/data/<game>.ts`, never inline in logic (`NUNO_CONFIG`, `LOBBY_LIMITS`).
 - **Hidden information**: full state (hands, deck order) lives only in `GameSession.state` (Json, zod-validated on read). Pages send clients `viewFor(state, viewerMemberId)` — own hand, opponents' *counts*, top card, public counters. A client never receives another hand or the deck.
@@ -97,6 +117,7 @@ The lobby is the persistent group; games are interchangeable activities started 
 | Kind | Files | Rule |
 |---|---|---|
 | Pure logic | `*-rules.ts`, `lib/game/**/rules.ts`, `lib/validation.ts`, `lib/notification-text.ts` | No DB, no `server-only` — this is what `tests/` covers |
+| Client-safe shared | `lib/avatars.ts`, `lib/bots.ts`, `lib/game/catalog.ts`, `lib/utils.ts` | Imported directly by client components — **never** add `server-only` to these |
 | Server data access | `lib/lobbies.ts`, `lib/friends.ts`, `lib/notifications.ts`, `lib/locks.ts`, `lib/game/session.ts`, `lib/realtime/server.ts` | Start with `import "server-only"` |
 | Mutations | `lib/actions/*.ts` | `"use server"`, pattern above |
 
@@ -110,9 +131,60 @@ Tests (`tests/*.test.ts`, vitest) only exercise the pure layer — they must sta
 
 **Fonts** (`app/layout.tsx`): Nunito Sans → `--font-sans` (body/UI), **Lilita One → `--font-display`, exposed as Tailwind `font-heading`** (display/headings only, never body), Geist Mono → `--font-geist-mono` / `font-mono` (join codes, stats).
 
+**Zero hardcoded colors in components, by design.** Color literals belong in the
+token blocks of `app/globals.css` and nowhere else — no component carries a hex /
+`rgb()` / `oklch()` literal, and no stock Tailwind palette class (`bg-blue-500`)
+appears anywhere in `app/` or `components/`. Keep it that way. Style through
+semantic tokens: `bg-card`,
+`text-muted-foreground`, `border-border`, and `bg-chart-1`…`bg-chart-5` for seat
+colors (gold, mint, coral, sky, lavender, in seat order).
+
+`Button` has two *dimensional* variants: `default` (gold chip pill — the brand
+primary) and `game` (purple 3D — the primary action **on the felt**, where gold is
+reserved for status: ready, won, NUNO). One primary per view; never put the two
+side by side competing for the same decision. There is no `bg-game` utility class —
+reach it via `var(--game)` or the variant.
+
+The Nuno deck has its own palette (`--nuno-*`, `--felt-*`) deliberately independent
+of the app theme — a printed card looks the same in any theme. Do not restyle cards
+with app tokens.
+
+`.design-sync/conventions.md` is the long form of the above, and is what ships to
+designers — keep the two in agreement.
+
 **Components — shadcn on Base UI, not Radix.** `components.json` uses the `base-maia` style: primitives come from `@base-ui/react` (see `components/ui/button.tsx`, `dialog.tsx`), and globals import `shadcn/tailwind.css`. Icons are Remix Icon (`@remixicon/react`), not lucide. New components follow: `cva` variants + `cn()` from `lib/utils.ts` + `data-slot` attributes. Files are kebab-case, exporting PascalCase components.
 
 Layout: `components/shell/` is the app chrome (sidebar, right rail, lobby quick panel), `components/game/` is game-surface UI (cards, flight animation, game-over modal — kept game-agnostic where possible), `components/ui/` is the primitive layer.
+
+## Design system sync — `.design-sync/` → `ds-bundle/`
+
+The repo publishes its own components to Claude Design as a browser bundle.
+`ds-bundle/` is **generated output and gitignored — never edit it**; the durable
+inputs under `.design-sync/` are committed.
+
+Adding, renaming, or reshaping a UI component means updating **three**
+hand-maintained places. None of them error when you miss one — the component
+silently vanishes from the sync or ships an empty API contract:
+
+- `.design-sync/config.json` → `componentSrcMap` — the component list comes
+  *entirely* from here (there is no `.d.ts` tree to discover).
+- `.design-sync/entry.tsx` — re-exports only the browser-safe surface. A
+  synthesized entry would pull `components/shell/*` and the `presence-*` /
+  notification components in, dragging `server-only`, Prisma, `pg` and
+  `pusher-js` into a browser IIFE that then fails to bundle.
+- `.design-sync/config.json` → `dtsPropsFor` — props are transcribed by hand;
+  change a component's props and this goes stale with nothing to catch it.
+
+`node .design-sync/build-css.mjs` must run before any sync: `app/globals.css` is
+Tailwind *source* (`@import "tailwindcss"`), not a stylesheet, and shipping it raw
+leaves everything unstyled.
+
+`.design-sync/NOTES.md` documents the full converter sequence and every config
+choice that looks odd but is deliberate (why `srcDir` must stay `components`, why
+`docsDir` points at an empty directory, why fonts are vendored). Read it before
+touching the pipeline. It also records the standing rule that the Claude Design
+project holds user-authored work (`templates/`, `uploads/`) outside the converter's
+output tree — **never hand-write a deletes list broader than the sync diff's own**.
 
 ## Local dev gotchas
 

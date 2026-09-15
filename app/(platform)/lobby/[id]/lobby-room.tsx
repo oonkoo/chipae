@@ -23,8 +23,8 @@ import {
 } from "@/lib/actions/lobbies";
 import { LOBBY_LIMITS } from "@/lib/lobby-rules";
 import { fillSeatsWithBots, startGame } from "@/lib/actions/games";
-import { GAME_CATALOG, availableGames } from "@/lib/game/catalog";
-import type { NunoView } from "@/lib/game/nuno/rules";
+import { GAME_CATALOG, getGame } from "@/lib/game/catalog";
+import type { Standing } from "@/lib/game/module";
 import { useLobbyChannel } from "@/lib/realtime/client";
 import type { LobbyEvent } from "@/lib/realtime/events";
 import { AvatarChip } from "@/components/avatar-chip";
@@ -47,6 +47,8 @@ export type LobbyView = {
   visibility: "PUBLIC" | "PRIVATE";
   status: "OPEN" | "IN_GAME" | "CLOSED";
   maxPlayers: number;
+  /** What this table is playing, once a game has been dealt. */
+  gameType: string | null;
   members: Array<{
     id: string;
     userId: string | null;
@@ -68,10 +70,16 @@ type Friend = {
   avatarId: string;
 };
 
-/** Nuno per-viewer snapshot, derived server-side from the GameSession row. */
+/**
+ * What the room knows about the table's game — deliberately not the game
+ * itself. The standings come from the game's own module (ADR-0005), so this
+ * shape is the same whichever game was played.
+ */
 export type GameView = {
   active: boolean;
-  view: NunoView;
+  /** Finishing order while over; current order while live. */
+  standings: Standing[];
+  youEliminated: boolean;
 } | null;
 
 /** A finished game at this table, with the lineup frozen at the time. */
@@ -112,13 +120,10 @@ export function LobbyRoom({
     lobby.members.length >= 2 && lobby.members.every((m) => m.ready);
 
   const inGame = lobby.status === "IN_GAME" && game?.active === true;
-  // The default (currently only) game on the shelf.
-  const shelfGame = availableGames()[0];
-  const eliminatedFromGame =
-    (inGame &&
-      me &&
-      game.view.players.find((p) => p.memberId === me.id)?.eliminated) ??
-    false;
+  // What is actually on this table — not "the first game on the shelf", which
+  // was only ever right while Nuno shipped alone.
+  const liveGame = lobby.gameType ? getGame(lobby.gameType) : null;
+  const eliminatedFromGame = (inGame && me && game.youEliminated) ?? false;
 
   // Games are full screen — seated players get pulled in automatically
   // unless they already quit this hand.
@@ -129,8 +134,8 @@ export function LobbyRoom({
   }, [inGame, eliminatedFromGame, me, lobby.id, router]);
 
   const lastHand =
-    !inGame && game && !game.active && game.view.placements
-      ? game.view.placements
+    !inGame && game && !game.active && game.standings.length > 0
+      ? game.standings
       : null;
   const openSeats = lobby.maxPlayers - lobby.members.length;
 
@@ -216,7 +221,7 @@ export function LobbyRoom({
             <div className="flex items-center gap-3 rounded-2xl border border-primary/40 bg-primary/10 p-4">
               <span className="size-2.5 animate-pulse rounded-full bg-primary" />
               <span className="text-sm font-medium text-foreground">
-                {shelfGame.name} in progress
+                {liveGame?.name ?? "A game"} in progress
               </span>
               <span className="ml-auto">
                 <Button
@@ -258,6 +263,7 @@ export function LobbyRoom({
                     ) : (
                       <AvatarChip
                         avatarId={member.avatarId ?? "chip-gold"}
+                        seat={member.seat}
                         className="size-12"
                       />
                     )}
@@ -445,9 +451,9 @@ export function LobbyRoom({
                   .slice(1)
                   .map(
                     (p, i) =>
-                      `${i + 2}. ${labelForMemberId(p.memberId)} (${
-                        p.eliminated ? "quit" : `${p.cardsLeft} left`
-                      })`
+                      `${i + 2}. ${labelForMemberId(p.memberId)}${
+                        p.detail ? ` (${p.detail})` : ""
+                      }`
                   )
                   .join(" · ")}
               </span>

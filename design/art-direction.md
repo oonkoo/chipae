@@ -25,7 +25,11 @@ Dark (default):
 | destructive — coral | `oklch(0.70 0.19 25)` | errors, leave/kick |
 | border | warm white @ 12% | hairlines, tinted warm not gray |
 
-**Player colors** (= chart-1…5, in seat order): gold, mint, coral, sky `oklch(0.75 0.12 235)`, lavender `oklch(0.75 0.12 305)`. Player 1 is always gold. Bots/CPU use the seat color at 50% opacity with a dashed ring.
+**Player colors** (= chart-1…6, in seat order): gold, mint, coral, sky `oklch(0.75 0.12 235)`, lavender `oklch(0.75 0.12 305)`, rose `oklch(0.75 0.14 345)`. Player 1 is always gold. Bots/CPU use the seat color at 50% opacity with a dashed ring.
+
+**Six, not five** (added 2026-08-04): a table seats six (`LOBBY_LIMITS.maxPlayers`), so five colors left the last seat rendering an undefined token.
+
+**Seat color comes from the seat, never from the avatar.** `AvatarChip` takes a `seat` prop at any table surface; the ten avatars carry their own `hue` for off-table surfaces only (the picker, friends, profiles, chat), where duplicates are harmless because the glyph still distinguishes them. Chat deliberately uses the avatar hue on every surface — a message stream is not a seat display, and the realtime `chat-message` payload carries no seat.
 
 Rules: gold is spent on actions and identity, never on large fills; one gold CTA per view. Status colors mean status — never decoration.
 

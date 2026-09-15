@@ -26,6 +26,8 @@ export type GameStanding = {
   /** Null for CPU seats, which render the robot mark instead. */
   avatarId: string | null;
   isBot: boolean;
+  /** 1-based lobby seat — keeps the player's table colour in the results. */
+  seat?: number;
   /** "3 cards left", "12 points" — whatever the game scores on. */
   detail?: string;
   /** Rendered muted, for players who quit or were eliminated. */
@@ -108,7 +110,11 @@ export function GameOverModal({
                   <RiRobot2Line className="size-4" />
                 </span>
               ) : (
-                <AvatarChip avatarId={player.avatarId} className="size-8" />
+                <AvatarChip
+                  avatarId={player.avatarId}
+                  seat={player.seat}
+                  className="size-8"
+                />
               )}
               <span className="flex min-w-0 flex-col leading-tight">
                 <span className="truncate text-sm font-medium text-foreground">

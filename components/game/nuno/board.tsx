@@ -10,14 +10,9 @@ import {
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { RiRobot2Line, RiVipCrownFill } from "@remixicon/react";
-import {
-  advanceBot,
-  callNuno,
-  drawCard,
-  passTurn,
-  playCard,
-} from "@/lib/actions/games";
+import { advanceBot, submitMove } from "@/lib/actions/games";
 import { NUNO_CONFIG } from "@/lib/game/data/nuno";
+import type { NunoMove } from "@/lib/game/nuno/module";
 import type { NunoCard, NunoColor, NunoView } from "@/lib/game/nuno/rules";
 import { AvatarChip } from "@/components/avatar-chip";
 import {
@@ -32,18 +27,9 @@ import {
   prefersReducedMotion,
   type Flight,
 } from "@/components/game/card-flight";
+import type { BoardMember } from "@/components/game/types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-export type BoardMember = {
-  id: string;
-  userId: string | null;
-  isBot: boolean;
-  botName: string | null;
-  username: string | null;
-  displayName: string | null;
-  avatarId: string | null;
-};
 
 type Seat = NunoView["players"][number];
 
@@ -115,7 +101,11 @@ function OpponentSeat({
         )}
       >
         {member && !member.isBot && member.avatarId ? (
-          <AvatarChip avatarId={member.avatarId} className="size-7" />
+          <AvatarChip
+            avatarId={member.avatarId}
+            seat={member.seat}
+            className="size-7"
+          />
         ) : (
           <span className="flex size-7 items-center justify-center rounded-full bg-muted text-muted-foreground">
             <RiRobot2Line className="size-4" />
@@ -217,6 +207,11 @@ export function NunoBoard({
     });
   }
 
+  /** Every Nuno move goes through the one generic action (ADR-0005). */
+  function move(next: NunoMove) {
+    run(() => submitMove(lobbyId, next));
+  }
+
   // Bot driver: when a CPU (or a departed seat) is up, any client may ask
   // the server to advance it after a casual 1–3s pause. The server ignores
   // duplicate or stale calls, so racing clients are harmless.
@@ -298,7 +293,7 @@ export function NunoBoard({
         ]);
       }
     }
-    run(() => playCard(lobbyId, card.id, chosenColor, undefined));
+    move({ kind: "play", cardId: card.id, chosenColor });
   }
 
   /** Same idea for drawing: the card leaves the deck immediately. */
@@ -321,7 +316,7 @@ export function NunoBoard({
         ]);
       }
     }
-    run(() => drawCard(lobbyId));
+    move({ kind: "draw" });
   }
 
   // Watch the table for changes nobody on this client triggered — an
@@ -495,7 +490,7 @@ export function NunoBoard({
       : `${memberLabel(view.currentMemberId)} is thinking…`;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex h-full min-h-0 flex-col gap-3">
       {/* Felt */}
       <div
         className="relative min-h-[30rem] flex-1 overflow-hidden rounded-3xl border border-white/10 p-3"
@@ -623,7 +618,7 @@ export function NunoBoard({
               size="xl"
               disabled={pending}
               aria-label="Call Nuno before anyone else plays"
-              onClick={() => run(() => callNuno(lobbyId))}
+              onClick={() => move({ kind: "callUno" })}
             >
               NUNO!
             </Button>
@@ -668,7 +663,11 @@ export function NunoBoard({
               )}
             >
               {me?.avatarId && (
-                <AvatarChip avatarId={me.avatarId} className="size-7" />
+                <AvatarChip
+                  avatarId={me.avatarId}
+                  seat={me.seat}
+                  className="size-7"
+                />
               )}
               <span className="flex flex-col leading-tight">
                 <span className="flex items-center gap-1 text-xs font-medium text-foreground">
@@ -803,8 +802,9 @@ export function NunoBoard({
         )}
       </div>
 
-      {/* Actions */}
-      {view.yourMemberId && (
+      {/* Actions — only when there is one. An always-rendered row sat empty
+          under the felt most of the time, leaving a gap at the bottom. */}
+      {view.yourMemberId && (view.youDrew || error) && (
         <div className="flex flex-col items-center gap-3">
           <div className="flex flex-wrap items-center justify-center gap-3">
             {view.youDrew && (
@@ -812,7 +812,7 @@ export function NunoBoard({
                 size="sm"
                 variant="secondary"
                 disabled={pending}
-                onClick={() => run(() => passTurn(lobbyId))}
+                onClick={() => move({ kind: "pass" })}
               >
                 Keep it &amp; pass
               </Button>
