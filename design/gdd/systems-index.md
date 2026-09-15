@@ -41,7 +41,7 @@ each other. Neither GDD may reference the other's rules.
 
 | Doc | Status | Note |
 |---|---|---|
-| `empire-wars-core.md` | **Implemented — v3** | Eight historical empires, whole-empire building (4 houses, then a monument), auctions, the Market (trades), Fortune and Royal Decree decks. Still a net-worth race — since 2026-09-11 to a target and round limit the table picks at setup (a toss settles disagreements). Standard match calibrated over 25,000 seeded all-CPU matches, every setting over 24,000 more |
+| `empire-wars-core.md` | **Implemented — v3** | Eight historical empires, whole-empire building (4 houses, then a monument), auctions, the Market (trades), Bonanza and Royal Decree decks. Still a net-worth race — since 2026-09-11 to a target and round limit the table picks at setup (a toss settles disagreements). Standard match calibrated over 25,000 seeded all-CPU matches, every setting over 24,000 more |
 | `archive/empire-wars-core-v2.md` | Superseded | The v2 crime-city simplification: roll, buy, rent, race; nothing off-turn. v3 kept its turn, race and table |
 | `archive/empire-wars-core-v1.md` | Superseded | The v1 rules (Heat, Dirty Money, combat, crew, bosses, missions, truces). History only |
 | `archive/empire-wars-bot-v1.md` | Superseded | v2's CPU is three rules and lives in the core GDD |

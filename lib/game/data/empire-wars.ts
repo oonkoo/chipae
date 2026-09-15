@@ -229,11 +229,11 @@ export const SPECIAL_TILES: Array<{ tile: number; kind: SpecialKind; name: strin
   { tile: 0, kind: "silk-road", name: "Silk Road" },
   { tile: 4, kind: "royal-decree", name: "Royal Decree" },
   { tile: 8, kind: "dungeon", name: "The Dungeon" },
-  { tile: 12, kind: "fortune", name: "Fortune" },
+  { tile: 12, kind: "fortune", name: "Bonanza" },
   { tile: 16, kind: "treasury", name: "Royal Treasury" },
   { tile: 20, kind: "royal-decree", name: "Royal Decree" },
   { tile: 24, kind: "treason", name: "Treason!" },
-  { tile: 28, kind: "fortune", name: "Fortune" },
+  { tile: 28, kind: "fortune", name: "Bonanza" },
 ];
 
 // ─── The cards ───────────────────────────────────────────────────────────────

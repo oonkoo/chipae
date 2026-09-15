@@ -30,7 +30,7 @@ auctions**.
 | Upgrades | Land on your own tile, one level (★→★★★) | **Own the whole empire**, then build up to 4 houses per city and the empire's **monument** on one of them — any time on your turn |
 | A passed-on city | Stays unowned | **Goes to auction**; everyone bids |
 | Trading | None | **The Market**: trade cities and coins with any rival, or auction one of your cities |
-| Cards | One deck, *Street Luck* | Two decks: **Fortune** (Chance) and **Royal Decree** (Community Chest) |
+| Cards | One deck, *Street Luck* | Two decks: **Bonanza** (Chance) and **Royal Decree** (Community Chest) |
 | A turn | Roll + at most one question | Roll + at most one landing question, then an **optional manage step** and **End turn** |
 | Off-turn decisions | None | Two, both timed with a safe default: answering a trade, bidding at an auction |
 
@@ -193,7 +193,7 @@ and three city icons painted first.
 | 0 | **Silk Road** *(start)* | Collect **200** every time you pass or land on it |
 | 4, 20 | **Royal Decree** | Draw a Royal Decree card (the Community Chest) |
 | 8 | **The Dungeon** | Just visiting — unless you were sent here |
-| 12, 28 | **Fortune** | Draw a Fortune card (the Chance) |
+| 12, 28 | **Bonanza** | Draw a Bonanza card (the Chance) |
 | 16 | **Royal Treasury** | Take **everything in the treasury** |
 | 24 | **Treason!** | Go straight to the Dungeon. You don't pass the Silk Road |
 
@@ -324,12 +324,12 @@ When you owe more coins than you hold (tribute, or a card):
 
 Nothing asks the debtor a question, so it works the same off-turn.
 
-### Fortune and Royal Decree
+### Bonanza and Royal Decree
 
 Two decks of ten, drawn at random (no deck to track). Every card resolves
 immediately; none asks a question.
 
-**Fortune** (tiles 12, 28)
+**Bonanza** (tiles 12, 28; id `fortune` in code and saved games — renamed for players 2026-09-14)
 
 | Card | Effect |
 |---|---|
@@ -638,7 +638,7 @@ match running at deploy fails `parseState` (ruleset 4) and is retired.
 ### Money, cards, winning
 
 - [ ] Forced sales sell buildings first (most-built city), then cities cheapest first, at half value, stopping when covered; then bankruptcy as v2. *(unit)*
-- [ ] Every Fortune and Royal Decree card has a table-driven test; adding a card without one fails. *(unit — **blocking**)*
+- [ ] Every Bonanza and Royal Decree card has a table-driven test; adding a card without one fails. *(unit — **blocking**)*
 - [ ] Winning, standings and quitting behave as v2. *(unit)*
 
 ### CPUs and clocks

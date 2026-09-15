@@ -420,7 +420,7 @@ const SPECIAL_TEXT: Record<SpecialKind, string> = {
   "silk-road": `Collect ${EMPIRE_WARS_CONFIG.payday} coins every time you pass or land here.`,
   "royal-decree": `Draw a Royal Decree card — one of ${CARDS["royal-decree"].length}. It happens straight away.`,
   dungeon: "Just visiting — unless you were sent here. Sent here, you miss a turn.",
-  fortune: `Draw a Fortune card — one of ${CARDS.fortune.length}. It happens straight away.`,
+  fortune: `Draw a Bonanza card — one of ${CARDS.fortune.length}. It happens straight away.`,
   treasury: "Take everything in the Royal Treasury.",
   treason: "Go straight to the Dungeon. You don't pass the Silk Road.",
 };

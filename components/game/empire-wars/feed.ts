@@ -76,7 +76,8 @@ export function describeEvent(event: TurnEvent, names: FeedNames): string {
         ? `${who} took the Royal Treasury: ${coins(event.amount)}`
         : `${who} found the Royal Treasury empty`;
     case "card": {
-      const deck = event.deck === "fortune" ? "Fortune" : "Royal Decree";
+      // The deck's id stays `fortune` (saved games carry it); players see Bonanza.
+      const deck = event.deck === "fortune" ? "Bonanza" : "Royal Decree";
       const card = CARDS[event.deck].find((c) => c.id === event.cardId);
       return `${deck}: ${card?.name ?? "a card"}`;
     }

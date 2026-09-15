@@ -366,7 +366,7 @@
   --ew-gold: #e8b95a;
   --ew-gold-edge: #8c6223;
 
-  /* Parchment: Fortune and Royal Decree, and the ink written on them. The
+  /* Parchment: Bonanza and Royal Decree, and the ink written on them. The
      fibre is a painted, seamless tile (board/parchment.webp). */
   --ew-parchment-tex: url("/games/empire-wars/board/parchment.webp");
   --ew-parchment: #eedfbb;
@@ -505,7 +505,7 @@
     0 2px 4px var(--ew-shadow);
 }
 
-/* Fortune and Royal Decree: a parchment card in a brass frame. */
+/* Bonanza and Royal Decree: a parchment card in a brass frame. */
 @utility ew-card {
   background:
     radial-gradient(ellipse at 50% 40%, transparent 25%, color-mix(in oklab, var(--ew-parchment-lo) 60%, transparent) 100%),

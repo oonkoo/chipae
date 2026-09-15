@@ -60,7 +60,7 @@ export function Prompt({
     return (
       <div className="flex flex-col items-center gap-1.5">
         <Button variant="game" size="lg" disabled={busy} onClick={() => onMove({ kind: "roll" })} className="@md:h-12 @md:px-6">
-          Roll the dice
+          March!
         </Button>
         <TurnClock expiresAt={view.turnExpiresAt} />
         {error && <p className="ew-chip rounded-lg px-2 py-0.5 text-[11px] text-destructive">{error}</p>}

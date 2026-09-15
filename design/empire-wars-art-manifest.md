@@ -60,7 +60,7 @@ enriches them:
 | `board/centerpiece-wide.webp` | 1920×1288 (3:2), ~220 KB | the ring's centre on a wide stage | ✓ |
 | `board/centerpiece-square.webp` | 1440×1440, ~180 KB | the ring's centre on a square stage (phones) | ✓ |
 | `board/walnut.webp` — walnut texture, seamless, evenly lit | 512×512, ~17 KB | tile plaques, corners and the frame (`--ew-walnut`), tinted by the `ew-*` utilities | ✓ |
-| `board/parchment.webp` — parchment texture, seamless, evenly lit | 512×512, ~4 KB | Fortune and Royal Decree tiles (`--ew-parchment-tex` in `ew-card`) | ✓ |
+| `board/parchment.webp` — parchment texture, seamless, evenly lit | 512×512, ~4 KB | Bonanza and Royal Decree tiles (`--ew-parchment-tex` in `ew-card`) | ✓ |
 | `board/corner.webp` — gold corner ornament, transparent | 256×256, ~27 KB | outer corner of the four corner tiles; all four corners of the setup, toss, how-to-play and Market dialogs (`CornerOrnament` / `FrameCorners` in `art.tsx`) | ✓ |
 
 The ornament is painted as a **bottom-left** piece; the other corners are
@@ -130,7 +130,7 @@ Remix icon in `SPECIAL_ICON` is the stand-in).
 | `silk-road` | Silk Road | 0 (start) | caravan saddlebags spilling spices and coins |
 | `royal-decree` | Royal Decree | 4, 20 | rolled scroll, gold ribbon, red wax seal |
 | `dungeon` | The Dungeon | 8 | barred wooden door in a stone arch |
-| `fortune` | Fortune | 12, 28 | golden astrolabe with blue enamel |
+| `fortune` | Bonanza | 12, 28 | golden astrolabe with blue enamel |
 | `treasury` | Royal Treasury | 16 | red velvet money sack spilling coins |
 | `treason` | Treason! | 24 | iron shackles on a chain |
 

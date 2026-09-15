@@ -452,11 +452,11 @@ describe("forced sales and bankruptcy", () => {
 
 // ─── The cards ───────────────────────────────────────────────────────────────
 
-describe("Fortune and Royal Decree", () => {
-  /** a stands on the Dungeon tile (visiting) and rolls onto 12 (Fortune) or 4 via 0? */
+describe("Bonanza and Royal Decree", () => {
+  /** a stands on the Dungeon tile (visiting) and rolls onto 12 (Bonanza) or 4 via 0? */
   function draw(deck: Deck, id: string, edit?: (s: EmpireState) => void) {
     const s = setup(["a", "b", "c"], (x) => {
-      // Fortune at 12 (from 8, roll 4); Royal Decree at 20 (from 16, roll 4).
+      // Bonanza at 12 (from 8, roll 4); Royal Decree at 20 (from 16, roll 4).
       place(x, "a", deck === "fortune" ? DUNGEON_TILE : 16);
       edit?.(x);
     });
